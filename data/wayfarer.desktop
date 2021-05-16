@@ -1,0 +1,6 @@
+[Desktop Entry]
+Terminal=false
+Type=Application
+Name=Wayfarer Screen Recorder
+Exec=wayfarer
+Icon=wayfarer

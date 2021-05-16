@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="128px" height="128px" viewBox="0 0 128 128" version="1.1">
+<defs>
+<filter id="alpha" filterUnits="objectBoundingBox" x="0%" y="0%" width="100%" height="100%">
+  <feColorMatrix type="matrix" in="SourceGraphic" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0"/>
+</filter>
+<mask id="mask0">
+  <g filter="url(#alpha)">
+<rect x="0" y="0" width="128" height="128" style="fill:rgb(0%,0%,0%);fill-opacity:0.988;stroke:none;"/>
+  </g>
+</mask>
+<linearGradient id="linear0" gradientUnits="userSpaceOnUse" x1="353.678741" y1="518.327698" x2="384.385834" y2="545.859924" gradientTransform="matrix(4.007773,0,0,3.767376,-1412.521097,-1939.575129)">
+<stop offset="0" style="stop-color:rgb(0%,0%,50.196081%);stop-opacity:1;"/>
+<stop offset="1" style="stop-color:rgb(0%,100%,100%);stop-opacity:1;"/>
+</linearGradient>
+<clipPath id="clip1">
+  <rect x="0" y="0" width="128" height="128"/>
+</clipPath>
+<g id="surface5" clip-path="url(#clip1)">
+<path style=" stroke:none;fill-rule:nonzero;fill:url(#linear0);" d="M 7.546875 11.164062 L 120.472656 11.164062 C 124.636719 11.164062 128.011719 14.535156 128.011719 18.699219 L 128.011719 109.347656 C 128.011719 113.511719 124.636719 116.882812 120.472656 116.882812 L 7.546875 116.882812 C 3.386719 116.882812 0.0117188 113.511719 0.0117188 109.347656 L 0.0117188 18.699219 C 0.0117188 14.535156 3.386719 11.164062 7.546875 11.164062 Z M 7.546875 11.164062 "/>
+</g>
+</defs>
+<g id="surface1">
+<use xlink:href="#surface5" mask="url(#mask0)"/>
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(97.254902%,88.235295%,88.235295%);fill-opacity:1;" d="M 97.351562 46.515625 C 96.546875 46.144531 95.59375 46.28125 94.921875 46.859375 L 81.507812 58.40625 L 81.507812 45.238281 C 81.507812 43.941406 80.453125 42.886719 79.15625 42.886719 L 31.695312 42.886719 C 30.402344 42.886719 29.34375 43.941406 29.34375 45.238281 L 29.34375 82.808594 C 29.34375 84.105469 30.402344 85.160156 31.695312 85.160156 L 79.15625 85.160156 C 80.453125 85.160156 81.511719 84.105469 81.511719 82.808594 L 81.511719 69.640625 L 94.925781 81.1875 C 95.597656 81.765625 96.550781 81.902344 97.355469 81.53125 C 98.164062 81.160156 98.679688 80.355469 98.679688 79.464844 L 98.679688 48.578125 C 98.679688 47.691406 98.164062 46.886719 97.355469 46.515625 "/>
+</g>
+</svg>
