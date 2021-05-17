@@ -322,6 +322,7 @@ int main(string []args)
     var opt = new OptionContext("");
     try
     {
+        opt.set_summary("wayfarer-cli %s".printf(WAYFARER_VERSION_STRING));
         opt.set_help_enabled(true);
         opt.add_main_entries(options, null);
         opt.parse(ref args);

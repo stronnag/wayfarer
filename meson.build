@@ -1,16 +1,22 @@
 project(
     'wayfarer',
     'vala', 'c',
-    version: '0.0.1'
 )
 
-app_nickname = 'wayfarer'
+version = get_option('version')
+
+message('Version: ' + version)
+
+conf_data = configuration_data()
+conf_data.set('version', version)
+
+app = 'wayfarer'
 
 gnome = import('gnome')
 
 asresources = gnome.compile_resources(
     'as-resources',
-    join_paths('data', app_nickname + '.gresource.xml'),
+    join_paths('data', app + '.gresource.xml'),
     source_dir: 'data',
     c_name: 'as'
 )
@@ -21,6 +27,18 @@ if appind_dep.found()
 else
  appind_dep  = dependency('ayatana-appindicator3-0.1')
 endif
+
+vapi_dir = meson.current_source_dir() / 'src/vapi'
+
+add_project_arguments(['--vapidir', vapi_dir], language: 'vala')
+add_project_arguments(['--pkg', 'wayfarer'], language: 'vala')
+
+configure_file(
+  input : 'src/wayfarer-config.h.in',
+  output : 'wayfarer-config.h',
+  configuration : conf_data
+)
+configuration_inc = include_directories('build')
 
 executable(
     meson.project_name(),
@@ -37,6 +55,7 @@ executable(
 	appind_dep,
         meson.get_compiler('vala').find_library('posix'),
 	],
+    include_directories : configuration_inc,
     install: true,
 )
 

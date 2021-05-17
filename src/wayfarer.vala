@@ -58,6 +58,8 @@ public class MyApplication : Gtk.Application {
         CheckButton prefs_not =  builder.get_object("prefs_not") as CheckButton;
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
 
+        about.version = WAYFARER_VERSION_STRING;
+
         about.delete_event.connect (() => {
                 about.hide();
                 return true;
