@@ -124,7 +124,7 @@ public class MyApplication : Gtk.Application {
                 sc.options.capaudio = audiorecord.active;
                 sc.options.framerate = framerate.get_value_as_int();
                 sc.options.adevice = audiosource.active_id;
-                dirname = dirchooser.get_current_folder ();
+                dirname = dirchooser.get_filename ();
                 var filepath = string.join(".", fileentry.text, "mkv");
                 var tryfile =  Path.build_filename (dirname, filepath);
                 var tmpname = fileentry.text;
