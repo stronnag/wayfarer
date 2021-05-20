@@ -1,6 +1,6 @@
 using Gst;
 
-public class AudioRecorder : GLib.Object
+public class MediaRecorder : GLib.Object
 {
     internal enum State
     {
@@ -13,7 +13,7 @@ public class AudioRecorder : GLib.Object
     private string srcname;
     private State state;
 
-    public AudioRecorder(string? []args = {})
+    public MediaRecorder(string? []args = {})
     {
         Gst.init (ref args);
         state = State.NONE;
@@ -61,7 +61,7 @@ public class AudioRecorder : GLib.Object
         state = State.NONE;
     }
 
-    public bool Capture_x11_mp4(string name, ScreenCap.AudioOptions o, int x, int y, int w, int h)
+    public bool Capture_x11_mp4(string name, ScreenCap.Options o, int x, int y, int w, int h)
     {
         string area = "";
         if (!o.fullscreen) {
@@ -111,7 +111,7 @@ int main (string[] args) {
 
     MainLoop ml;
     ml = new MainLoop ();
-    var a = new AudioRecorder();
+    var a = new MediaRecorder();
     string mondev = "alsa_output.pci-0000_00_1b.0.analog-stereo.monitor";
 
     switch(args.length) {

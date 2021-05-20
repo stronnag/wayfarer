@@ -36,7 +36,7 @@ configuration_inc = include_directories('build')
 executable(
     meson.project_name(),
     asresources,
-    'src/gst-record-audio.vala',
+    'src/gst-recording.vala',
     'src/recman.vala',
     'src/utils.vala',
     'src/xdg-notify.vala',
@@ -54,7 +54,7 @@ executable(
 
 executable(
     'wayfarer-cli',
-    'src/gst-record-audio.vala',
+    'src/gst-recording.vala',
     'src/recman.vala',
     'src/utils.vala',
     dependencies: [

@@ -34,7 +34,7 @@ public class ScreenCap : Object
         Audio=2
     }
 
-    public struct AudioOptions
+    public struct Options
     {
         bool capmouse;
         bool capaudio;
@@ -51,7 +51,7 @@ public class ScreenCap : Object
     private int w;
     private int h;
 
-    private AudioRecorder arec;
+    private MediaRecorder arec;
     private string audio_tmp;
     private string video_tmp;
     private bool have_ffmpeg;
@@ -59,7 +59,7 @@ public class ScreenCap : Object
     internal ScreenShot ssbus;
     internal ScreenCast scbus;
 
-    public AudioOptions options;
+    public Options options;
     public bool use_gst;
 
     STATE state = STATE.None;
@@ -81,7 +81,7 @@ public class ScreenCap : Object
         } catch (Error e) {
             stderr.printf("Screencast dbus: %s\n", e.message);
         }
-        arec = new AudioRecorder();
+        arec = new MediaRecorder();
         have_ffmpeg = Utils.exists_on_path("ffmpeg");
         var u = Posix.utsname();
         if (u.sysname == "FreeBSD") {
