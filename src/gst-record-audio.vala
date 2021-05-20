@@ -9,6 +9,7 @@ public class AudioRecorder : GLib.Object
     }
 
     private Pipeline pipeline;
+    private Element vpl;
     private string srcname;
     private State state;
 
@@ -60,6 +61,34 @@ public class AudioRecorder : GLib.Object
         state = State.NONE;
     }
 
+    public bool Capture_x11_mp4(string name, ScreenCap.AudioOptions o, int x, int y, int w, int h)
+    {
+        string area = "";
+        if (!o.fullscreen) {
+            int ex = (x+w)|1;
+            int ey= (y+h)|1;
+            area = "startx=%d starty=%d endx=%d endy=%d".printf(x,y,ex,ey);
+        }
+        var sm = "ximagesrc display-name=:0 show-pointer=%s %s ! video/x-raw, framerate=%d/1 ! videoconvert ! x264enc qp-min=17 qp-max=17 speed-preset=superfast threads=5 ! mux. matroskamux name=mux writing-app=wayfarer ! filesink location=%s".printf( o.capmouse.to_string(), area, o.framerate, name);
+
+        stderr.printf("pipe=%s\n", sm);
+        try {
+            vpl = Gst.parse_launch (sm);
+	} catch (Error e) {
+            stderr.printf ("Error: %s\n", e.message);
+            return false;
+        }
+        vpl.set_state (Gst.State.PLAYING);
+        return true;
+    }
+
+    public bool StopVideoRecording()
+    {
+        vpl.set_state (Gst.State.NULL);
+        vpl.dispose ();
+        return true;
+    }
+
     public void Convert(string vidsrc, string audsrc, string outfile)
     {
         Gst.Element pl;
@@ -83,24 +112,31 @@ int main (string[] args) {
     MainLoop ml;
     ml = new MainLoop ();
     var a = new AudioRecorder();
-    if (args.length == 2) {
-        Idle.add(() => {
-            a.StartRecording(args[1], "alsa_output.pci-0000_00_1b.0.analog-stereo.monitor");
-            Timeout.add_seconds(10, () => {
-                    a.StopRecording();
+    string mondev = "alsa_output.pci-0000_00_1b.0.analog-stereo.monitor";
+
+    switch(args.length) {
+        case 3:
+            mondev = args[2];
+        case 2:
+            Idle.add(() => {
+                a.StartRecording(args[1], mondev);
+                    Timeout.add_seconds(10, () => {
+                            a.StopRecording();
+                            ml.quit();
+                            return Source.REMOVE;
+                        });
+                    return Source.REMOVE;
+                });
+            break;
+        case 4:
+            Idle.add(() => {
+                    a.Convert(args[1], args[2], args[3]);
                     ml.quit();
                     return Source.REMOVE;
                 });
-            return Source.REMOVE;
-        });
-    } else if (args.length == 4) {
-        Idle.add(() => {
-                a.Convert(args[1], args[2], args[3]);
-                ml.quit();
-                return Source.REMOVE;
-            });
-    } else {
-        return 255;
+            break;
+        default:
+            return 255;
     }
     ml.run ();
     return 0;

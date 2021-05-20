@@ -55,6 +55,7 @@ public class ScreenCap : Object
     private string audio_tmp;
     private string video_tmp;
     private bool have_ffmpeg;
+    private bool bsd_x11;
     internal ScreenShot ssbus;
     internal ScreenCast scbus;
 
@@ -82,6 +83,11 @@ public class ScreenCap : Object
         }
         arec = new AudioRecorder();
         have_ffmpeg = Utils.exists_on_path("ffmpeg");
+        var u = Posix.utsname();
+        if (u.sysname == "FreeBSD") {
+            if(Environment.get_variable("XDG_SESSION_TYPE") != "wayland")
+                bsd_x11 = true;
+        }
     }
 
     public bool get_area(out string atext)
@@ -114,22 +120,28 @@ public class ScreenCap : Object
     public bool capture()
     {
         bool ok = false;
-        var vid_tmpl = "/tmp/wayfarer_%d.%t.mkv";
-        var vidopts = generate_options();
-        vidopts.for_each((k,v) => {
-                stderr.printf("%s => %s\n", k, v.print(true));
-            });
+        if(!bsd_x11) {
+            var vid_tmpl = "/tmp/wayfarer_%d.%t.mkv";
+            var vidopts = generate_options();
+            vidopts.for_each((k,v) => {
+                    stderr.printf("%s => %s\n", k, v.print(true));
+                });
 
-        stderr.printf("try video file %s\n", vid_tmpl);
-        try {
-            if (options.fullscreen)
-                scbus.Screencast(vid_tmpl, vidopts, out ok, out video_tmp);
-            else {
-                scbus.ScreencastArea(x, y, w, h, vid_tmpl, vidopts, out ok, out video_tmp);
+            stderr.printf("try video file %s\n", vid_tmpl);
+            try {
+                if (options.fullscreen)
+                    scbus.Screencast(vid_tmpl, vidopts, out ok, out video_tmp);
+                else {
+                    scbus.ScreencastArea(x, y, w, h, vid_tmpl, vidopts, out ok, out video_tmp);
+                }
+            } catch (Error e) {
+                stderr.printf("Capture area: %s\n", e.message);
             }
-        } catch (Error e) {
-            stderr.printf("Capture area: %s\n", e.message);
+        } else {
+            video_tmp = "/tmp/.x11cap.mkv";
+            ok = arec.Capture_x11_mp4(video_tmp, options, x, y, w, h);
         }
+
         if (ok) {
             stderr.printf("Video to %s\n", video_tmp);
             state |= STATE.Cap;
@@ -202,10 +214,14 @@ public class ScreenCap : Object
     {
         bool result;
         if ((state & STATE.Cap) == STATE.Cap) {
-            try {
-                scbus.StopScreencast(out result);
-            } catch (Error e) {
-                print(e.message);
+            if(!bsd_x11) {
+                try {
+                    scbus.StopScreencast(out result);
+                } catch (Error e) {
+                    print(e.message);
+                }
+            } else {
+                result = arec.StopVideoRecording();
             }
         }
         if((state & STATE.Audio) == STATE.Audio) {
@@ -223,11 +239,11 @@ public class ScreenCap : Object
                         print(e.message);
                     }
                 }
-                FileUtils.unlink(video_tmp);
+//                FileUtils.unlink(video_tmp);
             } else {
                 FileUtils.rename (video_tmp, options.outfile);
             }
-            FileUtils.unlink(audio_tmp);
+//            FileUtils.unlink(audio_tmp);
         } else {
             FileUtils.rename (video_tmp, options.outfile);
         }
