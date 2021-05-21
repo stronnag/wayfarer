@@ -7,11 +7,11 @@ app = 'wayfarer'
 
 gnome = import('gnome')
 
-asresources = gnome.compile_resources(
-    'as-resources',
+wresources = gnome.compile_resources(
+    'w-resources',
     join_paths('data', app + '.gresource.xml'),
     source_dir: 'data',
-    c_name: 'as'
+    c_name: 'w'
 )
 
 appind_dep  = dependency('appindicator3-0.1', required : false)
@@ -35,7 +35,7 @@ configuration_inc = include_directories('build')
 
 executable(
     meson.project_name(),
-    asresources,
+    wresources,
     'src/gst-recording.vala',
     'src/recman.vala',
     'src/utils.vala',
