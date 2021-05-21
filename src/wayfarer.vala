@@ -1,6 +1,7 @@
 using Gtk;
 using AppIndicator;
 
+
 public class MyApplication : Gtk.Application {
     Gtk.ApplicationWindow window;
     private Indicator ci;
@@ -19,9 +20,19 @@ public class MyApplication : Gtk.Application {
     private Gtk.Button startbutton;
     private Gtk.Label statuslabel;
 
+    public static bool fallback_x11;
+    public static bool show_version;
+
+
+    const OptionEntry[] options = {
+        { "fallback", 0, 0, OptionArg.NONE, out fallback_x11, "fallback option", null},
+        { "version", 'v', 0, OptionArg.NONE, out show_version, "show version", null},
+        {null}
+    };
+
     public MyApplication () {
         Object(application_id: "org.stonnag.wayfarer",
-               flags: ApplicationFlags.FLAGS_NONE);
+               flags:ApplicationFlags.FLAGS_NONE);
     }
 
     protected override void activate () {
@@ -120,6 +131,7 @@ public class MyApplication : Gtk.Application {
         ci.set_menu(menu);
         ci.set_secondary_activate_target(stoprecordingbutton);
         startbutton.clicked.connect(() => {
+                sc.options.fallback = fallback_x11;
                 sc.options.capmouse = mouserecord.active;
                 sc.options.capaudio = audiorecord.active;
                 sc.options.framerate = framerate.get_value_as_int();
@@ -402,6 +414,22 @@ public class MyApplication : Gtk.Application {
     }
 
     public static int main (string[] args) {
+        var opt = new OptionContext("");
+        try
+        {
+            opt.set_summary("wayfarer %s".printf(WAYFARER_VERSION_STRING));
+            opt.set_help_enabled(true);
+            opt.add_main_entries(options, null);
+            opt.parse(ref args);
+        } catch (OptionError e) {
+            stderr.printf("Error: %s\n", e.message);
+            stderr.printf("Run '%s --help' to see a full list of available options\n", args[0]);
+            return 1;
+        }
+        if (show_version) {
+            stdout.printf("%s\n", WAYFARER_VERSION_STRING);
+            return 0;
+        }
         MyApplication app = new MyApplication ();
         return app.run (args);
     }

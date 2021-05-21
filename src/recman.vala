@@ -39,11 +39,12 @@ public class ScreenCap : Object
         bool capmouse;
         bool capaudio;
         bool fullscreen;
+        bool fallback;
         int deviceid;
-        string adevice;
-        string outfile;
         int framerate;
         int delay;
+        string adevice;
+        string outfile;
     }
 
     private int x;
@@ -84,9 +85,10 @@ public class ScreenCap : Object
         arec = new MediaRecorder();
         have_ffmpeg = Utils.exists_on_path("ffmpeg");
         var u = Posix.utsname();
-        if (u.sysname == "FreeBSD") {
-            if(Environment.get_variable("XDG_SESSION_TYPE") != "wayland")
+        if(Environment.get_variable("XDG_SESSION_TYPE") != "wayland") {
+            if (options.fallback || u.sysname == "FreeBSD") {
                 bsd_x11 = true;
+            }
         }
     }
 
