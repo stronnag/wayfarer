@@ -241,11 +241,11 @@ public class ScreenCap : Object
                         print(e.message);
                     }
                 }
-//                FileUtils.unlink(video_tmp);
+                FileUtils.unlink(video_tmp);
             } else {
                 FileUtils.rename (video_tmp, options.outfile);
             }
-//            FileUtils.unlink(audio_tmp);
+            FileUtils.unlink(audio_tmp);
         } else {
             FileUtils.rename (video_tmp, options.outfile);
         }
