@@ -65,7 +65,7 @@ public class ScreenCap : Object
 
     STATE state = STATE.None;
 
-    public ScreenCap()
+    public ScreenCap(bool fallback=false)
     {
         try {
             ssbus = Bus.get_proxy_sync (BusType.SESSION,
@@ -86,9 +86,11 @@ public class ScreenCap : Object
         have_ffmpeg = Utils.exists_on_path("ffmpeg");
         var u = Posix.utsname();
         if(Environment.get_variable("XDG_SESSION_TYPE") != "wayland") {
-            if (options.fallback || u.sysname == "FreeBSD") {
+            stderr.printf("On X11\n");
+            if (fallback || u.sysname == "FreeBSD") {
                 bsd_x11 = true;
             }
+            stderr.printf("setting x11 finally %s\n", bsd_x11.to_string());
         }
     }
 

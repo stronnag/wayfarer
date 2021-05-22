@@ -131,7 +131,6 @@ public class MyApplication : Gtk.Application {
         ci.set_menu(menu);
         ci.set_secondary_activate_target(stoprecordingbutton);
         startbutton.clicked.connect(() => {
-                sc.options.fallback = fallback_x11;
                 sc.options.capmouse = mouserecord.active;
                 sc.options.capaudio = audiorecord.active;
                 sc.options.framerate = framerate.get_value_as_int();
@@ -210,7 +209,8 @@ public class MyApplication : Gtk.Application {
                     });
             });
 
-        sc = new ScreenCap();
+        stderr.printf("setting x11 %s\n", fallback_x11.to_string());
+        sc = new ScreenCap(fallback_x11);
         var at = sc.get_sources();
         foreach (var a in at) {
             audiosource.append(a.device,a.desc);
