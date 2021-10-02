@@ -31,7 +31,7 @@ public class MyApplication : Gtk.Application {
     };
 
     public MyApplication () {
-        Object(application_id: "org.stonnag.wayfarer",
+        Object(application_id: "org.stronnag.wayfarer",
                flags:ApplicationFlags.FLAGS_NONE);
     }
 
