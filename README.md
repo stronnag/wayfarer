@@ -20,6 +20,8 @@ Requires:
 
 **wayfarer** supports VP8 as the video format and Vorbis as the audio format. This is set, in some part due to restrictions of the `org.gnome.Screecast` Dbus API. The output is in a Matroska container.
 
+For Gnome shall 41, it is necessary to set `unsafe` mode in order to record one's own desktop (without a painful migration to the (new and possibly less functional) `org.freedesktop.portal.Desktop` Dbus API. There is a shell extension in the `gs41` directory that enables unsafe mode.
+
 ## Building
 
 Appindicator is a build time dependency; at runtime, if you have an appindicator Gnome Shell extension installed, you can use the indicator to stop recording; without such an indicator, you can use Notification, with a less good user experience.
@@ -31,18 +33,16 @@ Appindicator is a build time dependency; at runtime, if you have an appindicator
 The build system is meson / ninja, e.g.
 
 ```
-meson build --buildtype=release --prefix=/usr
-# for FreeBSD don't set "-prefix=/usr"
+meson build --buildtype=release --prefix=~/.local
 # then
-meson compile -C build
-sudo meson install -C build
+meson install -C build
 ```
 
 On older distros (e.g. Ubuntu 20.04), it is necessary to replace the compile and install with:
 
 ```
 cd build
-ninja && sudo ninja install
+ninja install
 ```
 
 ## User Interface

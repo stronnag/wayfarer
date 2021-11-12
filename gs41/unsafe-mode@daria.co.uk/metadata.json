@@ -1,0 +1,10 @@
+{
+  "shell-version": [ "41" ],
+  "uuid": "unsafe-mode@daria.co.uk",
+  "name": "Unsafe mode",
+  "description": "Set unsafe mode",
+  "url": "http://www.daria.co.uk/",
+  "original-authors": "Jonathan Hudson",
+  "encoding": "utf-8",
+  "locale": "en_GB.UTF-8"
+}
