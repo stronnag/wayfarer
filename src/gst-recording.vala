@@ -8,8 +8,9 @@ public class MediaRecorder : GLib.Object
         RECORDING = 1,
     }
 
-    private Pipeline pipeline;
+//    private Pipeline pipeline;
     private Element vpl;
+	private Element pipeline;
     private string srcname;
     private State state;
 
@@ -28,28 +29,16 @@ public class MediaRecorder : GLib.Object
         }
 
         if (filename != null && srcname != null) {
-            pipeline = new Pipeline ("test");
-            var audiosrc = ElementFactory.make ("pulsesrc", "pulsesrc");
-            var audioconvert = ElementFactory.make ("audioconvert", "audioconvert");
-            var vorbisenc = ElementFactory.make("vorbisenc", "vorbisenc");
-            var oggmux = ElementFactory.make("oggmux", "oggmux");
-            var filesink = ElementFactory.make("filesink", "filesink");
-
-            audiosrc.set_property("device", srcname);
-            filesink.set_property("location",filename);
-            pipeline.add( audiosrc);
-            pipeline.add( audioconvert);
-            pipeline.add( vorbisenc);
-            pipeline.add( oggmux);
-            pipeline.add( filesink);
-
-            audiosrc.link( audioconvert);
-            audioconvert.link( vorbisenc);
-            vorbisenc.link( oggmux);
-            oggmux.link( filesink);
-            state = State.RECORDING;
-            pipeline.set_state(Gst.State.PLAYING);
-            ok = true;
+			try {
+				var sm = "pulsesrc device=%s ! audioconvert ! opusenc bitrate=16000 ! oggmux ! filesink location=%s".printf(srcname, filename);
+				pipeline = Gst.parse_launch (sm);
+				state = State.RECORDING;
+				pipeline.set_state(Gst.State.PLAYING);
+				ok = true;
+			} catch (Error e) {
+				stderr.printf ("Error: %s\n", e.message);
+				return false;
+			}
         }
         return ok;
     }
@@ -92,7 +81,7 @@ public class MediaRecorder : GLib.Object
     public void Convert(string vidsrc, string audsrc, string outfile)
     {
         Gst.Element pl;
-        var sm = "filesrc location=\"%s\" ! matroskademux ! queue ! matroskamux name=mux ! filesink location=\"%s\"  filesrc location=\"%s\" ! decodebin ! audioconvert ! vorbisenc ! queue ! mux.".printf(vidsrc, outfile, audsrc);
+        var sm = "filesrc location=\"%s\" ! matroskademux ! queue ! matroskamux name=mux ! filesink location=\"%s\"  filesrc location=\"%s\" ! decodebin ! audioconvert ! opusenc ! queue ! mux.".printf(vidsrc, outfile, audsrc);
         try {
             pl = Gst.parse_launch (sm);
 	} catch (Error e) {

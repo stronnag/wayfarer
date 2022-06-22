@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="48px"
+   height="48px"
+   viewBox="0 0 48 48"
+   version="1.1"
+   id="svg35"
+   sodipodi:docname="wayfarer-circle.svg"
+   inkscape:version="1.1 (c4e8f9ed74, 2021-05-24)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview37"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="15.875"
+     inkscape:cx="24"
+     inkscape:cy="24"
+     inkscape:window-width="1920"
+     inkscape:window-height="1010"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg35" />
+  <defs
+     id="defs28">
+    <filter
+       id="alpha"
+       filterUnits="objectBoundingBox"
+       x="0"
+       y="0"
+       width="1"
+       height="1">
+      <feColorMatrix
+         type="matrix"
+         in="SourceGraphic"
+         values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0"
+         id="feColorMatrix9" />
+    </filter>
+    <mask
+       id="mask0">
+      <g
+         filter="url(#alpha)"
+         id="g14">
+        <rect
+           x="0"
+           y="0"
+           width="48"
+           height="48"
+           style="fill:rgb(0%,0%,0%);fill-opacity:0.988;stroke:none;"
+           id="rect12" />
+      </g>
+    </mask>
+    <linearGradient
+       id="linear0"
+       gradientUnits="userSpaceOnUse"
+       x1="353.678741"
+       y1="518.327698"
+       x2="384.385834"
+       y2="545.859924"
+       gradientTransform="matrix(1.502915,0,0,1.412766,-529.695411,-727.340673)">
+      <stop
+         offset="0"
+         style="stop-color:rgb(0%,0%,50.196081%);stop-opacity:1;"
+         id="stop17" />
+      <stop
+         offset="1"
+         style="stop-color:rgb(0%,100%,100%);stop-opacity:1;"
+         id="stop19" />
+    </linearGradient>
+    <clipPath
+       id="clip1">
+      <rect
+         x="0"
+         y="0"
+         width="48"
+         height="48"
+         id="rect22" />
+    </clipPath>
+    <g
+       id="surface5"
+       clip-path="url(#clip1)">
+      <path
+         style=" stroke:none;fill-rule:nonzero;fill:url(#linear0);"
+         d="M 2.832031 4.1875 L 45.179688 4.1875 C 46.738281 4.1875 48.003906 5.453125 48.003906 7.011719 L 48.003906 41.003906 C 48.003906 42.566406 46.738281 43.832031 45.179688 43.832031 L 2.832031 43.832031 C 1.269531 43.832031 0.00390625 42.566406 0.00390625 41.003906 L 0.00390625 7.011719 C 0.00390625 5.453125 1.269531 4.1875 2.832031 4.1875 Z M 2.832031 4.1875 "
+         id="path25" />
+    </g>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath435">
+      <path
+         style="opacity:0.999;fill:#000080;stroke:#00ffff;stroke-linecap:square;stroke-linejoin:bevel"
+         id="path437"
+         sodipodi:type="arc"
+         sodipodi:cx="24.629725"
+         sodipodi:cy="23.984335"
+         sodipodi:rx="20.825624"
+         sodipodi:ry="19.091227"
+         sodipodi:start="0"
+         sodipodi:end="6.2192539"
+         sodipodi:open="true"
+         sodipodi:arc-type="arc"
+         d="M 45.455349,23.984335 A 20.825624,19.091227 0 0 1 24.962563,43.073123 20.825624,19.091227 0 0 1 3.814739,24.594496 20.825624,19.091227 0 0 1 23.631548,4.9150501 20.825624,19.091227 0 0 1 45.412804,22.764637" />
+    </clipPath>
+  </defs>
+  <g
+     id="surface1"
+     clip-path="url(#clipPath435)">
+    <use
+       xlink:href="#surface5"
+       mask="url(#mask0)"
+       id="use30" />
+    <path
+       style=" stroke:none;fill-rule:nonzero;fill:rgb(97.254902%,88.235295%,88.235295%);fill-opacity:1;"
+       d="M 36.507812 17.445312 C 36.203125 17.304688 35.847656 17.355469 35.597656 17.574219 L 30.566406 21.902344 L 30.566406 16.964844 C 30.566406 16.476562 30.171875 16.082031 29.683594 16.082031 L 11.886719 16.082031 C 11.398438 16.082031 11.003906 16.476562 11.003906 16.964844 L 11.003906 31.054688 C 11.003906 31.539062 11.398438 31.9375 11.886719 31.9375 L 29.683594 31.9375 C 30.171875 31.9375 30.566406 31.539062 30.566406 31.054688 L 30.566406 26.113281 L 35.597656 30.445312 C 35.847656 30.664062 36.207031 30.710938 36.507812 30.574219 C 36.8125 30.433594 37.003906 30.132812 37.003906 29.796875 L 37.003906 18.21875 C 37.003906 17.882812 36.8125 17.582031 36.507812 17.441406 "
+       id="path32" />
+  </g>
+</svg>

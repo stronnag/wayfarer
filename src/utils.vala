@@ -29,8 +29,10 @@ namespace Utils
         {
             var file = File.new_for_path (filename);
             var file_info = file.query_info ("*", FileQueryInfoFlags.NONE);
-            return ((file_info.get_size() > 0) &&
-                    (file_info.get_content_type() == "audio/x-vorbis+ogg"));
+			var fi = file_info.get_content_type();
+			stderr.printf("Type %s\n", fi);
+            return ((file_info.get_size() > 0) && ((fi == "audio/x-vorbis+ogg") ||
+												   (fi == "audio/x-opus+ogg")));
         } catch {
             return false;
         }

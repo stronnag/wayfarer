@@ -125,7 +125,7 @@ public class ScreenCap : Object
     {
         bool ok = false;
         if(!bsd_x11) {
-            var vid_tmpl = "/tmp/wayfarer_%d.%t.mkv";
+            var vid_tmpl = "/tmp/__wayfarer_%d.%t.mkv";
             var vidopts = generate_options();
             vidopts.for_each((k,v) => {
                     stderr.printf("%s => %s\n", k, v.print(true));
@@ -243,11 +243,11 @@ public class ScreenCap : Object
                         print(e.message);
                     }
                 }
-                FileUtils.unlink(video_tmp);
+				//      FileUtils.unlink(video_tmp);
             } else {
                 FileUtils.rename (video_tmp, options.outfile);
             }
-            FileUtils.unlink(audio_tmp);
+		//FileUtils.unlink(audio_tmp);
         } else {
             FileUtils.rename (video_tmp, options.outfile);
         }

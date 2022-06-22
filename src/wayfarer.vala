@@ -108,11 +108,12 @@ public class MyApplication : Gtk.Application {
 
         startbutton.sensitive = false;
 
+/*
         fileentry.changed.connect(() => {
                 filename = fileentry.text;
                 update_status_label();
             });
-
+*/
         fullscreen.toggled.connect(() => {
                 update_status_label();
             });
@@ -136,7 +137,11 @@ public class MyApplication : Gtk.Application {
                 sc.options.framerate = framerate.get_value_as_int();
                 sc.options.adevice = audiosource.active_id;
                 dirname = dirchooser.get_filename ();
-                var filepath = string.join(".", fileentry.text, "mkv");
+				time_t currtime;
+				time_t(out currtime);
+				var fn  = "Wayfarer_%s".printf(Time.local(currtime).format("%F_%H%M%S"));
+				fileentry.text = fn;
+				var filepath = string.join(".", fn, "mkv");
                 var tryfile =  Path.build_filename (dirname, filepath);
                 var tmpname = fileentry.text;
                 int nfn = 0;
@@ -259,16 +264,18 @@ public class MyApplication : Gtk.Application {
 
     private void update_status_label()
     {
-        var startok = ((fileentry.text.length > 0) && (fullscreen.active || have_area));
+        var startok = (/*(fileentry.text.length > 0) &&*/ (fullscreen.active || have_area));
         bool need_space = false;
         if (startok) {
             statuslabel.label="";
         } else {
             StringBuilder sb = new StringBuilder();
+/**
             if(fileentry.text.length == 0) {
                 sb.append("Set a file name to record");
                 need_space = true;
             }
+**/
             if (!fullscreen.active) {
                 if(need_space)
                     sb.append(" : ");
