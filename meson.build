@@ -1,4 +1,4 @@
-project('wayfarer', 'vala', 'c', version : '0.1.2')
+project('wayfarer', 'vala', 'c', version : '0.2.0')
 
 conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
@@ -40,23 +40,12 @@ executable(
         dependency('gtk+-3.0'),
         dependency('gstreamer-1.0'),
 	dependency('gio-2.0'),
+	dependency('libportal'),
 	deps,
         meson.get_compiler('vala').find_library('posix'),
 	],
     include_directories : configuration_inc,
     install: true,
-)
-
-executable(
-    'wayfarer-cli',
-    wclisrcs,
-    dependencies: [
-	dependency('gstreamer-1.0'),
-	dependency('gio-2.0'),
-        meson.get_compiler('vala').find_library('posix'),
-	],
-    vala_args: '--define=RECMANEXE',
-    install: true
 )
 
 subdir('data')

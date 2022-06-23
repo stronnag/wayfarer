@@ -1,20 +1,4 @@
 
-[DBus (name = "org.gnome.Shell.Screenshot", timeout = 10000 )]
-interface ScreenShot : GLib.Object {
-    public abstract void  SelectArea(out int x, out int y, out int w, out int h) throws Error;
-}
-
-[DBus (name = "org.gnome.Shell.Screencast", timeout = 120000)]
-interface ScreenCast : GLib.Object {
-    public abstract void  ScreencastArea(int x, int y, int w, int h, string filetemplate,
-                                         HashTable<string,Variant> options,
-                                         out bool result, out string filename) throws Error;
-    public abstract void  Screencast(string filetemplate,
-                                     HashTable<string,Variant> options,
-                                     out bool result, out string filename) throws Error;
-    public abstract void  StopScreencast(out bool result) throws Error;
-}
-
 public class ScreenCap : Object
 {
     public struct AudioSource
@@ -23,137 +7,79 @@ public class ScreenCap : Object
         string desc;
     }
 
-/*
-    Causes recent pipewire to fail, alas.
-    const string PIPELINE="vp9enc min_quantizer=10 max_quantizer=50 cq_level=13 cpu-used=5 deadline=1000000 threads=%T ! queue ! webmmux";
-*/
     private enum STATE
     {
         None=0,
         Cap=1,
-        Audio=2
+        Audio=2,
+		Pipewire=4
     }
 
     public struct Options
     {
+		string mediatype;
         bool capmouse;
         bool capaudio;
         bool fullscreen;
         bool fallback;
         int deviceid;
         int framerate;
+        int audiorate;
         int delay;
         string adevice;
         string outfile;
+		int x0;
+		int y0;
+		int x1;
+		int y1;
+		int fd;
+		uint32 node_id;
+		uint8 atype;
+		int vaapis;
+		uint nproc;
     }
 
-    private int x;
-    private int y;
-    private int w;
-    private int h;
-
-    private MediaRecorder arec;
-    private string audio_tmp;
-    private string video_tmp;
-    private bool have_ffmpeg;
+    private MediaRecorder mediarec;
     private bool bsd_x11;
-    internal ScreenShot ssbus;
-    internal ScreenCast scbus;
 
     public Options options;
-    public bool use_gst;
 
-    STATE state = STATE.None;
+	public signal void report_gst_error(string s);
 
-    public ScreenCap(bool fallback=false)
-    {
-        try {
-            ssbus = Bus.get_proxy_sync (BusType.SESSION,
-                                        "org.gnome.Shell.Screenshot",
-                                        "/org/gnome/Shell/Screenshot");
-        } catch (Error e) {
-            stderr.printf("Screenshot dbus: %s\n", e.message);
-        }
+    STATE astate = STATE.None;
 
-        try {
-            scbus = Bus.get_proxy_sync (BusType.SESSION,
-                                        "org.gnome.Shell.Screencast",
-                                        "/org/gnome/Shell/Screencast");
-        } catch (Error e) {
-            stderr.printf("Screencast dbus: %s\n", e.message);
-        }
-        arec = new MediaRecorder();
-        have_ffmpeg = Utils.exists_on_path("ffmpeg");
-        var u = Posix.utsname();
+    public ScreenCap(bool fallback=false) {
+        mediarec = new MediaRecorder();
+//		var u = Posix.utsname();
         if(Environment.get_variable("XDG_SESSION_TYPE") != "wayland") {
-            stderr.printf("On X11\n");
-            if (fallback || u.sysname == "FreeBSD") {
-                bsd_x11 = true;
+            /* if (fallback || u.sysname == "FreeBSD") {
             }
-            stderr.printf("setting x11 finally %s\n", bsd_x11.to_string());
+			*/
+			bsd_x11 = true;
         }
+		mediarec.report_gst_error.connect((s) => {
+				report_gst_error(s);
+			});
+	}
+
+    public bool get_x11() {
+        return bsd_x11;
     }
 
-    public bool get_area(out string atext)
-    {
-        x = y = w =h = 0;
-        bool ok = false;
-        try {
-            ssbus.SelectArea(out x, out y, out w, out h);
-            ok = true;
-        } catch (Error e) {
-            stderr.printf("error: %s\n", e.message);
-        }
-        x = ((1+x)/2)*2;
-        y = ((1+y)/2)*2;
-        w = ((1+w)/2)*2;
-        h = ((1+h)/2)*2;
-        atext = "%dx%d@%d,%d".printf(w,h,x,y);
-        return ok;
-    }
 
-    private HashTable<string,Variant> generate_options()
-    {
-        HashTable<string,Variant> vopts = new HashTable<string,Variant>(null, null);
-//        vopts.insert ("pipeline", new Variant.take_string(PIPELINE));
-        vopts.insert ("framerate", new Variant.int32 (options.framerate));
-        vopts.insert ("draw-cursor", options.capmouse);
-        return vopts;
-    }
-
-    public bool capture()
+    public bool capture(PortalManager.SourceInfo []sources)
     {
         bool ok = false;
         if(!bsd_x11) {
-            var vid_tmpl = "/tmp/__wayfarer_%d.%t.mkv";
-            var vidopts = generate_options();
-            vidopts.for_each((k,v) => {
-                    stderr.printf("%s => %s\n", k, v.print(true));
-                });
-
-            stderr.printf("try video file %s\n", vid_tmpl);
-            try {
-                if (options.fullscreen)
-                    scbus.Screencast(vid_tmpl, vidopts, out ok, out video_tmp);
-                else {
-                    scbus.ScreencastArea(x, y, w, h, vid_tmpl, vidopts, out ok, out video_tmp);
-                }
-            } catch (Error e) {
-                stderr.printf("Capture area: %s\n", e.message);
-            }
+            ok = mediarec.StartPipewire(options, sources);
+			if (ok) {
+				astate |= STATE.Pipewire;
+			}
         } else {
-            video_tmp = "/tmp/.x11cap.mkv";
-            ok = arec.Capture_x11_mp4(video_tmp, options, x, y, w, h);
-        }
-
-        if (ok) {
-            stderr.printf("Video to %s\n", video_tmp);
-            state |= STATE.Cap;
-            audio_tmp = video_tmp.replace(".mkv", ".ogg");
-            ok = arec.StartRecording(audio_tmp, options.adevice);
-            if (ok)
-                state |= STATE.Audio;
-            stderr.printf("Audio %s %s => %s\n", ok.to_string(), options.adevice,audio_tmp);
+            ok = mediarec.Capture_fallback(options);
+            if (ok) {
+                astate |= STATE.Cap;
+            }
         }
         return ok;
     }
@@ -214,152 +140,26 @@ public class ScreenCap : Object
         return at;
     }
 
-    public void post_process()
-    {
-        bool result;
-        if ((state & STATE.Cap) == STATE.Cap) {
-            if(!bsd_x11) {
-                try {
-                    scbus.StopScreencast(out result);
-                } catch (Error e) {
-                    print(e.message);
-                }
-            } else {
-                result = arec.StopVideoRecording();
-            }
-        }
-        if((state & STATE.Audio) == STATE.Audio) {
-            arec.StopRecording();
-	    stderr.printf("Stop recording\n");
-	    if(Utils.is_vorbis(audio_tmp)) {
-                if(use_gst || !have_ffmpeg) {
-                    arec.Convert(video_tmp, audio_tmp, options.outfile);
-                } else {
-                    var ffmpeg = "ffmpeg -i %s -i %s -c copy %s -y".printf(video_tmp, audio_tmp, options.outfile);
-                    try
-                    {
-                        Process.spawn_command_line_sync (ffmpeg);
-                    } catch (Error e)  {
-                        print(e.message);
-                    }
-                }
-				//      FileUtils.unlink(video_tmp);
-            } else {
-                FileUtils.rename (video_tmp, options.outfile);
-            }
-		//FileUtils.unlink(audio_tmp);
-        } else {
-            FileUtils.rename (video_tmp, options.outfile);
-        }
-        state = STATE.None;
+    public void post_process() {
+		mediarec.StopRecording();
+		astate = STATE.None;
     }
+
+	public void set_bbox(int x0, int y0, int x1, int y1) {
+		if(x1 > x0) {
+			options.x0 = x0;
+			options.x1 = x1;
+		} else {
+			options.x0 = x1;
+			options.x1 = x0;
+		}
+
+		if(y1 > y0) {
+			options.y0 = y0;
+			options.y1 = y1;
+		} else {
+			options.y0 = y1;
+			options.y1 = y0;
+		}
+	}
 }
-
-#if RECMANEXE
-
-static bool aflag;
-static bool fflag;
-static bool mflag;
-static bool pflag;
-
-static int frate;
-static int delay;
-
-public class CliCap : Object
-{
-    MainLoop ml;
-    ScreenCap sc;
-
-    private void process()
-    {
-        stderr.printf("Sources start\n");
-        var at = sc.get_sources();
-        stderr.printf("Sources %u\n", at.length);
-        foreach(var a in at)  {
-            stderr.printf("Name: %s, dev: %s\n", a.desc, a.device);
-            if(mflag == false && a.device.contains(".monitor"))
-                sc.options.adevice = a.device;
-            else
-                sc.options.adevice = a.device;
-        }
-
-        bool res = false;
-        if(fflag == false) {
-            string astr;
-            res = sc.get_area(out astr);
-            if (res == true)
-                stderr.printf("%s\n", astr);
-            else {
-                stderr.printf("failed to get screen info\n");
-            }
-        }
-        res = sc.capture();
-    }
-
-    private bool sigfunc()
-    {
-        stderr.printf("Got signal \n");
-        sc.post_process();
-        ml.quit();
-        return Source.CONTINUE;
-    }
-
-
-    public void run(string fname)
-    {
-        ml= new MainLoop();
-
-        Unix.signal_add(Posix.Signal.TERM, sigfunc);
-        Unix.signal_add(Posix.Signal.USR1, sigfunc);
-
-        sc = new ScreenCap();
-        sc.options.fullscreen = fflag;
-        sc.options.capmouse = !pflag;
-        sc.options.capaudio = !aflag;
-        if (frate == 0)
-            frate = 25;
-        sc.options.framerate = frate;
-        sc.options.delay = delay;
-        sc.options.outfile = fname;
-        process();
-        ml.run();
-    }
-}
-
-const OptionEntry[] options = {
-    { "noaudio", 'A', 0, OptionArg.NONE, out aflag, "don't record audio", null},
-    { "fullscreen", 'F', 0, OptionArg.NONE, out fflag, "full screen", null},
-    { "use-mic", 'M', 0, OptionArg.NONE, out mflag, "use microphone (vice monitor)", null},
-    { "nopointer", 'P', 0, OptionArg.NONE, out pflag, "don't show pointer", null},
-    { "frame-rate", 'f', 0, OptionArg.INT, out frate, "Frames/sec", "25"},
-    { "delay", 'd', 0, OptionArg.INT, out delay, "Delay", "0"},
-    {null}
-};
-
-int main(string []args)
-{
-    string outfn = null;
-    var opt = new OptionContext("");
-    try
-    {
-        opt.set_summary("wayfarer-cli %s".printf(WAYFARER_VERSION_STRING));
-        opt.set_help_enabled(true);
-        opt.add_main_entries(options, null);
-        opt.parse(ref args);
-    } catch (OptionError e) {
-        stderr.printf("Error: %s\n", e.message);
-        stderr.printf("Run '%s --help' to see a full list of available options\n", args[0]);
-        return 1;
-    }
-    if(args.length > 1) {
-        outfn = args[1];
-    } else {
-        stderr.printf("File name required\n");
-        return 1;
-    }
-
-    var cliapp = new CliCap();
-    cliapp.run(outfn);
-    return 0;
-}
-#endif

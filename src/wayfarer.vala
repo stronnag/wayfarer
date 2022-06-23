@@ -6,26 +6,43 @@ public class MyApplication : Gtk.Application {
     Gtk.ApplicationWindow window;
     private Indicator ci;
     private ScreenCap sc;
-    private bool have_area;
+    private uint8 have_area;
     private string filename;
+
     private string dirname;
-    private string astr;
     private int audioid;
+    private int audiorate;
+	private string msel;
     private bool use_not;
     private bool use_notall;
+
     private Notify nt;
     private uint timerid;
     private Gtk.CheckButton fullscreen;
     private Gtk.Entry fileentry;
     private Gtk.Button startbutton;
     private Gtk.Label statuslabel;
+	private PortalManager pw;
+	private FileChooserButton dirchooser;
+	private ComboBoxText mediasel;
+
+	private int fd;
+	private int x0;
+	private int y0;
+	private int x1;
+	private int y1;
+
+	private PortalManager.SourceInfo []sources = {};
 
     public static bool fallback_x11;
+	public static bool no_vaapi;
     public static bool show_version;
 
+	private AreaWindow sw;
 
     const OptionEntry[] options = {
-        { "fallback", 0, 0, OptionArg.NONE, out fallback_x11, "fallback option", null},
+        { "fallback", 'f', 0, OptionArg.NONE, out fallback_x11, "fallback option", null},
+        { "no-vaapi", 0,  0, OptionArg.NONE, out no_vaapi, "don't use vaapi encoders", null},
         { "version", 'v', 0, OptionArg.NONE, out show_version, "show version", null},
         {null}
     };
@@ -38,14 +55,13 @@ public class MyApplication : Gtk.Application {
     protected override void activate () {
         Builder builder;
         builder = new Builder.from_resource("/org/stronnag/wayfarer/wayfarer.ui");
-
         builder.connect_signals (null);
         window = builder.get_object ("appwin") as Gtk.ApplicationWindow;
         this.add_window (window);
         window.set_application (this);
 
         window.destroy.connect( () => {
-                clean_up();
+				clean_up();
             });
 
         fullscreen  =  builder.get_object("fullscreen") as CheckButton;
@@ -53,7 +69,7 @@ public class MyApplication : Gtk.Application {
         startbutton = builder.get_object("startbutton") as Button;
         statuslabel = builder.get_object("statuslabel") as Label;
 
-        FileChooserButton dirchooser = builder.get_object("dirchooser") as FileChooserButton;
+        dirchooser = builder.get_object("dirchooser") as FileChooserButton;
         ComboBoxText audiosource = builder.get_object("audiosource") as ComboBoxText;
         CheckButton audiorecord =  builder.get_object("audiorecord") as CheckButton;
         CheckButton mouserecord =  builder.get_object("mouserecord") as CheckButton;
@@ -65,9 +81,9 @@ public class MyApplication : Gtk.Application {
         Gtk.AboutDialog about = builder.get_object ("wayfarerabout") as Gtk.AboutDialog;
         Gtk.Dialog prefs = builder.get_object ("wayfarerprefs") as Gtk.Dialog;
         Gtk.Button prefapply = builder.get_object("prefsapply") as Button;
-        CheckButton prefs_gst =  builder.get_object("prefs_gst") as CheckButton;
         CheckButton prefs_not =  builder.get_object("prefs_not") as CheckButton;
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
+		mediasel = builder.get_object("media_sel") as ComboBoxText;
 
         about.version = WAYFARER_VERSION_STRING;
 
@@ -82,7 +98,6 @@ public class MyApplication : Gtk.Application {
             });
 
         prefapply.clicked.connect(() => {
-                sc.use_gst = prefs_gst.active;
                 use_not = prefs_not.active;
                 use_notall = prefs_notall.active;
                 prefs.hide();
@@ -108,12 +123,6 @@ public class MyApplication : Gtk.Application {
 
         startbutton.sensitive = false;
 
-/*
-        fileentry.changed.connect(() => {
-                filename = fileentry.text;
-                update_status_label();
-            });
-*/
         fullscreen.toggled.connect(() => {
                 update_status_label();
             });
@@ -135,13 +144,18 @@ public class MyApplication : Gtk.Application {
                 sc.options.capmouse = mouserecord.active;
                 sc.options.capaudio = audiorecord.active;
                 sc.options.framerate = framerate.get_value_as_int();
+                sc.options.audiorate = audiorate;
                 sc.options.adevice = audiosource.active_id;
+				sc.options.fd = fd;
+                sc.options.atype = have_area;
+                sc.options.mediatype = mediasel.active_id;
+
                 dirname = dirchooser.get_filename ();
-				time_t currtime;
-				time_t(out currtime);
-				var fn  = "Wayfarer_%s".printf(Time.local(currtime).format("%F_%H%M%S"));
-				fileentry.text = fn;
-				var filepath = string.join(".", fn, "mkv");
+                time_t currtime;
+                time_t(out currtime);
+                var fn  = "Wayfarer_%s".printf(Time.local(currtime).format("%F_%H%M%S"));
+                fileentry.text = fn;
+                var filepath = string.join(".", fn, mediasel.active_id);
                 var tryfile =  Path.build_filename (dirname, filepath);
                 var tmpname = fileentry.text;
                 int nfn = 0;
@@ -200,7 +214,7 @@ public class MyApplication : Gtk.Application {
                         }
                         if(!use_notall)
                             nt.close_last();
-                        var res = sc.capture();
+                        var res = sc.capture(sources);
                         if (res == false) {
                               if(timerid > 0) {
                                   Source.remove(timerid);
@@ -214,8 +228,13 @@ public class MyApplication : Gtk.Application {
                     });
             });
 
-        stderr.printf("setting x11 %s\n", fallback_x11.to_string());
         sc = new ScreenCap(fallback_x11);
+		sc.report_gst_error.connect((s) => {
+				do_stop_action();
+				statuslabel.label = s;
+			});
+
+		fallback_x11 = sc.get_x11();
         var at = sc.get_sources();
         foreach (var a in at) {
             audiosource.append(a.device,a.desc);
@@ -223,22 +242,51 @@ public class MyApplication : Gtk.Application {
 
         if(at.length == 0) {
             stderr.puts("No audio sources found\n");
-            quit();
+            //quit();
+			audiorecord.active = false;
         }
 
-        Unix.signal_add(Posix.Signal.USR1, () => {
+		sc.options.vaapis = (no_vaapi) ? 0 : check_for_vaapi();
+		sc.options.nproc = GLib.get_num_processors();
+
+		sw = new AreaWindow ();
+		sw.area_set.connect((_x0, _y0, _x1, _y1) => {
+				x0 = Utils.get_even(_x0);
+				y0 = Utils.get_even(_y0);
+				x1 = Utils.get_even(_x1);
+				y1 = Utils.get_even(_y1);
+				sc.set_bbox(x0, y0, x1, y1);
+				string astr = "(%d %d) (%d %d)".printf(sc.options.x0, sc.options.y0,
+													   sc.options.x1, sc.options.y1);
+				if (x0 != -1 && x1 != -1) {
+					have_area = 1;
+					update_status_label(astr);
+				} else {
+					have_area = 0;
+					update_status_label();
+				}
+				sw.hide();
+			});
+
+		Unix.signal_add(Posix.Signal.USR1, () => {
                 do_stop_action();
                 return Source.CONTINUE;
             });
 
         read_config();
+
+		mediasel.active = 0;
+		if (msel != null) {
+			mediasel.active_id = msel;
+		}
+
         if(dirname != null)
             dirchooser.set_current_folder(dirname);
-        if(filename != null)
+
+		if(filename != null)
             fileentry.text = filename;
         audiosource.active = audioid;
 
-        prefs_gst.active = sc.use_gst;
         prefs_not.active = use_not;
         prefs_notall.active = use_notall;
 
@@ -246,11 +294,38 @@ public class MyApplication : Gtk.Application {
                 audioid = audiosource.active;
             });
 
+		if(!fallback_x11) {
+			pw = new PortalManager();
+			pw.complete.connect((_fd) => {
+					fd = _fd;
+					if (fd != -1 && sources.length > 0) {
+						if (sources[0].source_type == 1) {
+							run_area_selection();
+						} else {
+							have_area = 2;
+							update_status_label();
+						}
+					}
+				});
+			pw.source_info.connect((s) => {
+					sources += s;
+				});
+
+			var ag = new Gtk.AccelGroup();
+			ag.connect('p', Gdk.ModifierType.CONTROL_MASK, 0, (a,o,k,m) => {
+					pw.invalidate();
+					return true;
+				});
+			window.add_accel_group(ag);
+		}
+
         areabutton.clicked.connect(() => {
-                have_area = sc.get_area(out astr);
-                if (have_area)
-                    fullscreen.active = false;
-                update_status_label();
+				sources = {};
+				if(!fallback_x11) {
+					pw.run(mouserecord.active);
+				} else {
+					run_area_selection();
+				}
             });
 
         nt = new Notify();
@@ -258,35 +333,72 @@ public class MyApplication : Gtk.Application {
                 if(use_notall)
                     do_stop_action();
             });
-
         window.show_all ();
     }
 
-    private void update_status_label()
-    {
-        var startok = (/*(fileentry.text.length > 0) &&*/ (fullscreen.active || have_area));
-        bool need_space = false;
-        if (startok) {
-            statuslabel.label="";
-        } else {
-            StringBuilder sb = new StringBuilder();
-/**
-            if(fileentry.text.length == 0) {
-                sb.append("Set a file name to record");
-                need_space = true;
-            }
-**/
-            if (!fullscreen.active) {
-                if(need_space)
-                    sb.append(" : ");
-                if(have_area)
-                    sb.append_printf("Area: %s", astr);
-                else
-                    sb.append("Set area or full-screen");
-            }
-            statuslabel.label=sb.str;
+    private void run_area_selection() {
+		if (!fullscreen.active) {
+			int mon = -1;
+			if (sources.length == 1) {
+				mon = sources[0].xpos / sources[0].width;
+			}
+            sw.run (mon);
         }
-        startbutton.sensitive = startok;
+    }
+
+    private int check_for_vaapi() {
+        string text;
+        int vaapis = 0;
+        var res = check_gst_vaapi(out text);
+        if(res) {
+            var parts = text.split("\n");
+            foreach (var p in parts) {
+                if (p.contains("vaapih264enc")) {
+                    vaapis |= 2;
+                } else if (p.contains("vaapivp8enc")) {
+                    vaapis |= 1;
+                }
+            }
+        }
+        return vaapis;
+    }
+
+    private bool check_gst_vaapi(out string output) {
+        bool ok = true;
+        output="";
+        try {
+			var subp = new Subprocess(
+				SubprocessFlags.STDERR_MERGE|SubprocessFlags.STDOUT_PIPE,
+				"gst-inspect-1.0", "vaapi");
+			subp.communicate_utf8(null, null, out output, null);
+			subp.wait_check_async.begin();
+        } catch (Error e) {
+			output = e.message;
+			ok = false;
+		}
+        return ok;
+	}
+
+    private void update_status_label(string? astr=null) {
+        var startok = (fullscreen.active || have_area > 0);
+		StringBuilder sb = new StringBuilder();
+		if (!fullscreen.active) {
+			switch(have_area) {
+			case 0:
+				sb.append("Set area or window");
+				break;
+			case 1:
+				sb.append_printf("Area: %s", astr);
+				break;
+			case 2:
+				sb.append("Window");
+				break;
+			}
+		} else {
+			sb.append("Full screen");
+		}
+		statuslabel.label=sb.str;
+		startbutton.sensitive = startok;
     }
 
     private int show_conflict_dialog(string filename)
@@ -342,74 +454,66 @@ public class MyApplication : Gtk.Application {
     }
 
 
-    private void clean_up()
-    {
+    private void clean_up() {
+		dirname = dirchooser.get_filename ();
+		msel = mediasel.active_id;
         save_config();
         quit();
     }
 
-    private void save_config()
-    {
+    private void save_config() {
         var fn = get_config_file();
         if (fn != null) {
             var fp = FileStream.open(fn, "w");
-            if(fp != null)
-            {
-                if (dirname != null)
+            if(fp != null) {
+                if (dirname != "")
                     fp.printf("dir = %s\n", dirname);
-                if (filename != null)
-                    fp.printf("file = %s\n", filename);
+                if (audiorate != 0)
+                    fp.printf("audiorate = %d\n", audiorate);
                 if (audioid != 0)
                     fp.printf("audioid = %d\n", audioid);
-                if (sc.use_gst)
-                    fp.puts("use_gst = true\n");
                 if (use_not)
                     fp.puts("use_not = true\n");
                 if (use_notall)
                     fp.puts("use_notall = true\n");
-            }
+				fp.printf("media_type = %s\n", msel);
+			}
         }
     }
 
-    private void read_config()
-    {
+    private void read_config() {
         var fn = get_config_file();
         if (fn != null) {
             var fp = FileStream.open(fn, "r");
-            if(fp != null)
-            {
+            if(fp != null) {
                 string line;
-                while ((line = fp.read_line ()) != null)
-                {
+                while ((line = fp.read_line ()) != null) {
                     if(line.strip().length > 0 &&
                        !line.has_prefix("#") &&
-                       !line.has_prefix(";"))
-                    {
+                       !line.has_prefix(";")) {
                         var parts = line.split("=");
-                        if(parts.length == 2)
-                        {
+                        if(parts.length == 2) {
                             var p0 = parts[0].strip();
                             var p1 = parts[1].strip();
-                            switch (p0)
-                            {
-                                case "dir":
-                                    dirname = p1;
-                                    break;
-                                case "file":
-                                    filename = p1;
-                                    break;
-                                case "audioid":
-                                    audioid = int.parse(p1);
-                                    break;
-                                case "use_gst":
-                                    sc.use_gst = (p1 == "true");
-                                    break;
-                                case "use_not":
-                                    use_not = (p1 == "true");
-                                    break;
-                                case "use_notall":
-                                    use_notall = (p1 == "true");
-                                    break;
+                            switch (p0) {
+							case "dir":
+								dirname = p1;
+								break;
+							case "audioid":
+								audioid = int.parse(p1);
+								break;
+							case "audiorate":
+								audiorate = int.parse(p1);
+								break;
+							case "use_not":
+								use_not = (p1 == "true");
+								break;
+							case "use_notall":
+								use_notall = (p1 == "true");
+								break;
+							case "media_type":
+								msel = p1;
+								break;
                             }
                         }
                     }
