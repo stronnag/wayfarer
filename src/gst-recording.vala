@@ -124,7 +124,11 @@ public class MediaRecorder : GLib.Object
         var vc = Utils.get_encopts(o);
 		StringBuilder sb = new StringBuilder();
 
-		sb.append_printf("ximagesrc display-name=:0 show-pointer=%s %s ! video/x-raw, framerate=%d/1 ! videoconvert ! queue ! %s ! filesink location=\"%s\"", o.capmouse.to_string(), area, o.framerate, vc, o.outfile);
+		var display = Environment.get_variable("DISPLAY");
+		if (display == null)
+			display = ":0";
+
+		sb.append_printf("ximagesrc display-name=%s show-pointer=%s %s ! video/x-raw, framerate=%d/1 ! videoconvert ! queue ! %s ! filesink location=\"%s\"", display, o.capmouse.to_string(), area, o.framerate, vc, o.outfile);
         if(o.capaudio) {
             var arate = (o.audiorate == 0) ? "" : "bitrate=%d".printf(o.audiorate);
             sb.append_printf(" pulsesrc device=\"%s\" ! audio/x-raw ! queue ! audioconvert ! opusenc %s ! mux." , o.adevice, arate);
