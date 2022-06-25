@@ -202,7 +202,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="editable">False</property>
-                        <property name="placeholder-text" translatable="yes">Auto-generated</property>
+                        <property name="placeholder-text" translatable="yes">Auto-generated filename</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
