@@ -275,7 +275,7 @@ public class MyApplication : Gtk.Application {
 
         read_config();
 
-		mediasel.active = 0;
+		mediasel.active_id = "mkv";  // "good"
 		if (msel != null) {
 			mediasel.active_id = msel;
 		}
