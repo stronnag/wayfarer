@@ -10,7 +10,7 @@ public class MyApplication : Gtk.Application {
     private string filename;
 
     private string dirname;
-    private int audioid;
+    private string audioid;
     private int audiorate;
 	private string msel;
     private bool use_not;
@@ -285,13 +285,17 @@ public class MyApplication : Gtk.Application {
 
 		if(filename != null)
             fileentry.text = filename;
-        audiosource.active = audioid;
 
+		if(audioid != null && audioid.length > 4) {
+			audiosource.active_id = audioid;
+		} else {
+			audiosource.active = 0;
+		}
         prefs_not.active = use_not;
         prefs_notall.active = use_notall;
 
         audiosource.changed.connect(() => {
-                audioid = audiosource.active;
+                audioid = audiosource.active_id;
             });
 
 		if(!fallback_x11) {
@@ -470,8 +474,8 @@ public class MyApplication : Gtk.Application {
                     fp.printf("dir = %s\n", dirname);
                 if (audiorate != 0)
                     fp.printf("audiorate = %d\n", audiorate);
-                if (audioid != 0)
-                    fp.printf("audioid = %d\n", audioid);
+                if (audioid != "")
+                    fp.printf("audioid = %s\n", audioid);
                 if (use_not)
                     fp.puts("use_not = true\n");
                 if (use_notall)
@@ -500,7 +504,7 @@ public class MyApplication : Gtk.Application {
 								dirname = p1;
 								break;
 							case "audioid":
-								audioid = int.parse(p1);
+								audioid = p1;
 								break;
 							case "audiorate":
 								audiorate = int.parse(p1);
