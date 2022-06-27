@@ -11,7 +11,11 @@ namespace Utils {
 			break;
 		case "mkv":
 		case "webm":
-			sb.append_printf("vp8enc min_quantizer=10 max_quantizer=13 cpu-used=5 deadline=1000000 threads=%u",  (1+o.nproc/2));
+			if ((o.vaapis & 1) == 1) {
+				sb.append("vaapivp8enc");
+			} else {
+				sb.append_printf("vp8enc min_quantizer=10 max_quantizer=13 cpu-used=5 deadline=1000000 threads=%u",  (1+o.nproc/2));
+			}
 			break;
 		default:
 			print("Error: No encoder %s\n", o.mediatype.to_string());
