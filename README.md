@@ -79,11 +79,6 @@ The menu button at the right of the header bar offers three options:
 
 Preferences are stored as a simple `key = value` text file in `~/.config/wayfarer/cap.conf`.
 
-There are a couple of items there which are not in the UI:
-
-* `audiorate = N` : set audio bit rate
-* `use_vp9 = true|false` : use VP9 (vice VP8) for mkv, webm
-
 
 ## Miscellaneous
 
