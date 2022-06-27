@@ -83,6 +83,7 @@ public class MyApplication : Gtk.Application {
         Gtk.Button prefapply = builder.get_object("prefsapply") as Button;
         CheckButton prefs_not =  builder.get_object("prefs_not") as CheckButton;
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
+		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
 
         about.version = WAYFARER_VERSION_STRING;
@@ -100,6 +101,7 @@ public class MyApplication : Gtk.Application {
         prefapply.clicked.connect(() => {
                 use_not = prefs_not.active;
                 use_notall = prefs_notall.active;
+				audiorate = int.parse(prefs_audiorate.text);
                 prefs.hide();
             });
 
@@ -273,9 +275,13 @@ public class MyApplication : Gtk.Application {
                 return Source.CONTINUE;
             });
 
+		use_notall = true;
+		mediasel.active_id = "mkv";  // "good"
+
         read_config();
 
-		mediasel.active_id = "mkv";  // "good"
+		prefs_audiorate.text = audiorate.to_string();
+
 		if (msel != null) {
 			mediasel.active_id = msel;
 		}
@@ -476,10 +482,8 @@ public class MyApplication : Gtk.Application {
                     fp.printf("audiorate = %d\n", audiorate);
                 if (audioid != "")
                     fp.printf("audioid = %s\n", audioid);
-                if (use_not)
-                    fp.puts("use_not = true\n");
-                if (use_notall)
-                    fp.puts("use_notall = true\n");
+				fp.printf("use_not = %s\n", use_not.to_string());
+				fp.printf("use_notall = %s\n", use_notall.to_string());
 				fp.printf("media_type = %s\n", msel);
 			}
         }
