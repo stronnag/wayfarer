@@ -17,6 +17,15 @@ Requires:
 * Vala
 * Gstreamer 1.0
 * AppIndicator
+* XDG Portal
+
+There is also a  GTK4 branch
+
+* GTK 3
+* Vala
+* Gstreamer 1.0
+* XDG Portal
+* Blueprint (GTK Builder compiler).
 
 **wayfarer** supports MKV, MP4 and WEB video container (vp8, mp4) and Opus as the audio format.
 
@@ -28,11 +37,13 @@ wayfarer uses the XDG Portal on modern Gnome desktops, with all the pain and dim
 
 ## Building
 
-Appindicator is a build time dependency; at runtime, if you have an appindicator Gnome Shell extension installed, you can use the indicator to stop recording; without such an indicator, you can use Notification, with a less good user experience.
+Appindicator is a build time GTK3 dependency; at runtime, if you have an appindicator Gnome Shell extension installed, you can use the indicator to stop recording; without such an indicator, you can use Notification, with a less good user experience.
 
 * For Arch Linux, install `libappindicator-gtk3`.
 * On Debian / Ubuntu et al the app indicator package is called `libayatana-appindicator3-dev` and you also need `gir1.2-ayatanaappindicator3-0.1`.
 * For Fedora, try `libappindicator-gtk3-devel`
+
+For GTK4, a small "Stop Recording" window is displayed instead.
 
 Other requirements:
 
@@ -61,7 +72,8 @@ meson install -C build
 Once recording is started:
 
 * If `Timer` is set, the recording will run for the set number of seconds
-* If an AppIndicator tray is used, there will be an icon in the system tray, clicking this provides a "Stop Recording" button.
+* GTK3: If an AppIndicator tray is used, there will be an icon in the system tray, clicking this provides a "Stop Recording" button.
+* GTK4: A small window provides a "Stop Recording" button.
 * Otherwise, use the "Preferences" menu and set `Use notifications (vice App Indicator)`. Clicking on the notification will stop the recording.
 
 The menu button at the right of the header bar offers three options:
@@ -75,7 +87,7 @@ The menu button at the right of the header bar offers three options:
 ![Main Window](data/assets/wayfarer-prefs.png)
 
 * Use Notifications for ready : if set, a notification count down is shown for delays > 2 seconds.
-* Use notifications (vice App Indicator). Provides a persistent Notification to stop recordings; mainly needed if you don't have an AppIndicator tray shell extension.
+* Use notifications (vice App Indicator). Provides a persistent Notification to stop recordings; mainly needed if you don't have an AppIndicator tray shell extension (on GTK3).
 
 Preferences are stored as a simple `key = value` text file in `~/.config/wayfarer/cap.conf`.
 
