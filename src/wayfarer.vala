@@ -166,6 +166,17 @@ public class MyApplication : Gtk.Application {
             });
         window.add_action(saq);
 
+        saq = new GLib.SimpleAction("nopersist",null);
+        saq.activate.connect(() => {
+				pw.invalidate();
+            });
+        window.add_action(saq);
+
+		set_accels_for_action ("win.nopersist", {"<Ctrl><Shift>p"});
+		set_accels_for_action ("win.quit", {"<Ctrl>q"});
+		set_accels_for_action ("win.about", { "F1" });
+		set_accels_for_action ("win.prefs", {"<Ctrl>p"});
+
         startbutton.sensitive = false;
 
         fullscreen.toggled.connect(() => {
