@@ -200,7 +200,6 @@ public class MyApplication : Gtk.Application {
                 fileentry.text = fn;
                 var filepath = string.join(".", fn, mediasel.active_id);
                 var tryfile =  Path.build_filename (dirname, filepath);
-				fileentry.text = tryfile;
                 sc.options.outfile = tryfile;
                 stderr.printf("Out => %s\n",  sc.options.outfile);
                 sc.options.fullscreen = fullscreen.active;
