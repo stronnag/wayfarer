@@ -62,6 +62,7 @@ Gtk.ApplicationWindow window {
 
   Gtk.Box {
 	orientation: vertical;
+	spacing: 2;
     // Row 1
     Gtk.Box {
 	spacing: 4;
@@ -72,7 +73,7 @@ Gtk.ApplicationWindow window {
 	  spacing: 4;
 	  [start]
 	    Gtk.Image {
-	     icon-name: "zoom-fit-best-symbolic";
+	     icon-name: "folder-videos-symbolic";
 	    }
 	    Gtk.Label dirlabel {
 	    }
@@ -283,6 +284,7 @@ Gtk.AboutDialog wayfarerabout {
 }
 
 Gtk.Window stopwindow {
+  default-width: "160";
   title: "Wayfarer";
   Gtk.Button stoprecbutton {
    Gtk.Box {

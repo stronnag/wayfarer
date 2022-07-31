@@ -7,23 +7,6 @@ app = 'wayfarer'
 
 gnome = import('gnome')
 
-blueprints = custom_target('blueprints',
-  input: files(
-    'data/wayfarer.blp',
-  ),
-  output: '.',
-  command: [find_program('blueprint-compiler'), 'batch-compile', '@OUTPUT@', '@CURRENT_SOURCE_DIR@', '@INPUT@'],
-)
-
-
-wresources = gnome.compile_resources(
-    'w-resources',
-    join_paths('data', app + '.gresource.xml'),
-    dependencies: blueprints,
-    source_dir: 'data',
-    c_name: 'w'
-)
-
 deps = []
 
 configure_file(
@@ -34,6 +17,7 @@ configure_file(
 configuration_inc = include_directories('build')
 
 subdir('src')
+subdir('data')
 
 executable(
     meson.project_name(),
@@ -51,5 +35,8 @@ executable(
     install: true,
 )
 
-subdir('data')
-meson.add_install_script('meson/post_install.sh')
+gnome.post_install(
+  glib_compile_schemas: true,
+  gtk_update_icon_cache: true,
+  update_desktop_database: true
+)

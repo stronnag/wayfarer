@@ -97,4 +97,4 @@ Preferences are stored as a simple `key = value` text file in `~/.config/wayfare
 Licence : GPL v3 or later
 (c) Jonathan Hudson 2021,2022
 
-Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the developer's pain with the moving targets of Gnome, Wayland and Pipewire.
+Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the developer's pain with the moving targets of Gnome, Wayland, Pipewire and XDG Portal.

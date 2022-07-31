@@ -89,8 +89,7 @@ public class MyApplication : Gtk.Application {
 		stopwindow = builder.get_object("stopwindow") as Window;
 		var stoprecbutton = builder.get_object("stoprecbutton") as Button;
 		stopwindow.close_request.connect(() => {
-				stopwindow.hide();
-				return false;
+				return true;
 			});
 
 		stoprecbutton.clicked.connect(() => {

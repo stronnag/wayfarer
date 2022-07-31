@@ -56,12 +56,19 @@ public class AreaWindow : Gtk.Window {
 			});
 	}
 
-	public void run(int monitor) {
-		if (monitor == -1) {
+	public void run(int mno) {
+		if (mno == -1) {
 			fullscreen();
 		} else {
-//			fullscreen_on_monitor(Gdk.Screen.get_default(), monitor);
-			fullscreen();
+			var dpy = Gdk.Display.get_default();
+			var mons = dpy.get_monitors();
+			var nitems = mons.get_n_items();
+			if (mno < nitems) {
+				var monitor = (Gdk.Monitor)mons.get_item(mno);
+				fullscreen_on_monitor(monitor);
+			} else {
+				fullscreen();
+			}
 		}
 		present();
 	}
@@ -87,53 +94,3 @@ public class AreaWindow : Gtk.Window {
 		}
 	}
 }
-
-#if TEST
-// valac -D TEST  --pkg gtk4 --pkg cairo  sel4.vala
-class SelTest : Gtk.Application {
-	uint32 tid = 0;
-	public SelTest() {
-        Object(application_id: "org.stronnag.seltest",
-               flags: ApplicationFlags.FLAGS_NONE);
-    }
-
-    public override void activate () {
-        base.startup();
-		var window = new Gtk.ApplicationWindow(this);
-		add_window (window);
-		var button = new Gtk.Button.with_label("SelTest");
-		button.clicked.connect(() => {
-				var sw = new AreaWindow (0);
-				sw.area_set.connect((x0, y0, x1, y1) => {
-						if(tid != 0) {
-							Source.remove(tid);
-							tid = 0;
-						}
-						stderr.printf("area: %d %d %d %d\n", x0, y0, x1, y1);
-						sw.destroy();
-					});
-				sw.area_quit.connect(() => {
-						if(tid != 0) {
-							Source.remove(tid);
-							tid = 0;
-						}
-						print("ESC\n");
-						sw.destroy();
-					});
-				Timeout.add_seconds(60, () => {
-						quit();
-						return false;
-					});
-			});
-		window.child = button;
-		window.present();
-	}
-}
-
-int main (string[] args) {
-    Gtk.init ();
-	var app = new SelTest();
-	app.run();
-	return 0;
-}
-#endif
