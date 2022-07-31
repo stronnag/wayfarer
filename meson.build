@@ -27,7 +27,7 @@ executable(
         dependency('gtk4'),
         dependency('gstreamer-1.0'),
 	dependency('gio-2.0'),
-	dependency('libportal-gtk4'),
+	dependency('libportal'),
 	deps,
         meson.get_compiler('vala').find_library('posix'),
 	],
