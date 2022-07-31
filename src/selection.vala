@@ -6,61 +6,53 @@ public class AreaWindow : Gtk.Window {
 	private int ax;
 	private int ay;
 	private bool dorect;
-
+	private Gdk.RGBA fill;
+	private Gdk.RGBA stroke;
 	public signal void area_set(int x0, int y0, int x1, int y1);
+	public signal void area_quit();
+
 
 	public AreaWindow() {
-		add_events (Gdk.EventMask.BUTTON_PRESS_MASK
-					| Gdk.EventMask.BUTTON_RELEASE_MASK
-					| Gdk.EventMask.KEY_PRESS_MASK
-					| Gdk.EventMask.KEY_RELEASE_MASK
-					| Gdk.EventMask.POINTER_MOTION_MASK);
-		set_transparent();
-		set_decorated(false);
-		set_keep_above (true);
-		var evtc = new EventControllerKey (this);
-		evtc.set_propagation_phase(PropagationPhase.CAPTURE);
 
-		key_press_event.connect((e) => {
-				evtc.handle_event(e);
-				return false;
-			});
+		fill = Gdk.RGBA(){red = 1.0f, green = 1.0f, blue = 1.0f, alpha= 0.2f};
+		stroke = Gdk.RGBA(){red = 0.0f, green = 0.2f, blue = 0.8f, alpha = 0.8f};
+
+		set_cursor_from_name("crosshair");
+		remove_css_class("background");
+
+		var evtc = new EventControllerKey ();
+		evtc.set_propagation_phase(PropagationPhase.CAPTURE);
+		((Gtk.Widget)this).add_controller(evtc);
 
 		evtc.key_pressed.connect((kv, kc, mfy) => {
 				var ec = Gdk.keyval_from_name("Escape");
 				if (kv == ec) {
-					area_set(-1, -1, -1, -1);
+					area_quit();
 				}
 				return false;
 			});
 
-		var gestd = new GestureDrag(this);
+		var gestd = new GestureDrag();
 		gestd.set_exclusive(true);
-		gestd.set_window(this.get_window());
-
-		motion_notify_event.connect((e) => {
-				gestd.handle_event(e);
-				return false;
-			});
+		((Gtk.Widget)this).add_controller(gestd);
 
 		gestd.drag_begin.connect((x,y) => {
 				spx = (int)x;
 				spy = (int)y;
-				dorect = true;
+				draw_area(false);
 			});
 
 		gestd.drag_end.connect((x,y) => {
 				int ex = spx + (int)x;
 				int ey = spy + (int)y;
-				dorect = false;
-				queue_draw();
+				draw_area(false);
 				area_set(spx, spy, ex, ey);
 			});
 
 		gestd.drag_update.connect((x,y) => {
 				ax = spx + (int)x;
 				ay = spy + (int)y;
-				queue_draw();
+				draw_area(true);
 			});
 	}
 
@@ -68,49 +60,80 @@ public class AreaWindow : Gtk.Window {
 		if (monitor == -1) {
 			fullscreen();
 		} else {
-			fullscreen_on_monitor(Gdk.Screen.get_default(), monitor);
+//			fullscreen_on_monitor(Gdk.Screen.get_default(), monitor);
+			fullscreen();
 		}
-		show_all();
-		set_toplevel_cursor(Gdk.CursorType.CROSSHAIR);
+		present();
 	}
 
-	private void set_transparent() {
-		draw.connect((w, c) => {
-				c.set_source_rgba(0, 0, 0, 0);
-				c.set_operator(Cairo.Operator.SOURCE);
-				c.paint();
-				c.set_operator(Cairo.Operator.OVER);
-				return false;
-			});
-		var screen = get_screen();
-		var visual = screen.get_rgba_visual();
-		if (visual!= null && screen.is_composited())
-			set_visual(visual);
-		set_app_paintable(true);
+	private void draw_area(bool flag) {
+		dorect = flag;
+		queue_draw();
 	}
 
-	private void set_toplevel_cursor (Gdk.CursorType? cursor_type) {
-        Gdk.Window gdk_window = this.get_window();
-        if (cursor_type != null) {
-			var dp = this.get_display();
-            gdk_window.set_cursor(new Gdk.Cursor.for_display(dp, cursor_type));
-		} else {
-            gdk_window.set_cursor(null);
-		}
-    }
-
-	public override bool draw (Cairo.Context cr) {
+	public override void snapshot (Gtk.Snapshot snap) {
 		if (dorect) {
-			cr.set_line_cap(Cairo.LineCap.ROUND);
-			cr.set_source_rgba(1, 1, 1, 0.2);
-			cr.rectangle(spx, spy, ax-spx, ay-spy);
-			cr.fill_preserve();
-			cr.set_line_width(2);
-			cr.set_source_rgba(1, 1, 1, 0.5);
-			cr.stroke();
+			var rect = Graphene.Rect.alloc();
+			float[] lwidths = {2,2,2,2};
+			Gdk.RGBA[] lcols = {stroke, stroke, stroke, stroke};
+			var rrect = Gsk.RoundedRect(){};
+			rect.init(spx, spy, ax-spx, ay-spy);
+			rrect.init_from_rect(rect, 0.0f);
+			snap.append_color(fill, rect);
+			snap.append_border(rrect, lwidths, lcols);
 		} else {
-                    cr.new_path();
+			var rect = Graphene.Rect.zero();
+			snap.append_color(fill, rect);
 		}
-		return false;
 	}
 }
+
+#if TEST
+// valac -D TEST  --pkg gtk4 --pkg cairo  sel4.vala
+class SelTest : Gtk.Application {
+	uint32 tid = 0;
+	public SelTest() {
+        Object(application_id: "org.stronnag.seltest",
+               flags: ApplicationFlags.FLAGS_NONE);
+    }
+
+    public override void activate () {
+        base.startup();
+		var window = new Gtk.ApplicationWindow(this);
+		add_window (window);
+		var button = new Gtk.Button.with_label("SelTest");
+		button.clicked.connect(() => {
+				var sw = new AreaWindow (0);
+				sw.area_set.connect((x0, y0, x1, y1) => {
+						if(tid != 0) {
+							Source.remove(tid);
+							tid = 0;
+						}
+						stderr.printf("area: %d %d %d %d\n", x0, y0, x1, y1);
+						sw.destroy();
+					});
+				sw.area_quit.connect(() => {
+						if(tid != 0) {
+							Source.remove(tid);
+							tid = 0;
+						}
+						print("ESC\n");
+						sw.destroy();
+					});
+				Timeout.add_seconds(60, () => {
+						quit();
+						return false;
+					});
+			});
+		window.child = button;
+		window.present();
+	}
+}
+
+int main (string[] args) {
+    Gtk.init ();
+	var app = new SelTest();
+	app.run();
+	return 0;
+}
+#endif

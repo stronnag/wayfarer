@@ -1,10 +1,9 @@
 using Gtk;
-using AppIndicator;
+//using AppIndicator;
 
 
 public class MyApplication : Gtk.Application {
     Gtk.ApplicationWindow window;
-    private Indicator ci;
     private ScreenCap sc;
     private uint8 have_area;
     private string filename;
@@ -23,8 +22,9 @@ public class MyApplication : Gtk.Application {
     private Gtk.Button startbutton;
     private Gtk.Label statuslabel;
 	private PortalManager pw;
-	private FileChooserButton dirchooser;
+	private Button dirchooser;
 	private ComboBoxText mediasel;
+	private Window stopwindow;
 
 	private int fd;
 	private int x0;
@@ -55,13 +55,13 @@ public class MyApplication : Gtk.Application {
     protected override void activate () {
         Builder builder;
         builder = new Builder.from_resource("/org/stronnag/wayfarer/wayfarer.ui");
-        builder.connect_signals (null);
-        window = builder.get_object ("appwin") as Gtk.ApplicationWindow;
+        window = builder.get_object ("window") as Gtk.ApplicationWindow;
         this.add_window (window);
         window.set_application (this);
 
-        window.destroy.connect( () => {
+        window.close_request.connect( () => {
 				clean_up();
+				return false;
             });
 
         fullscreen  =  builder.get_object("fullscreen") as CheckButton;
@@ -69,7 +69,8 @@ public class MyApplication : Gtk.Application {
         startbutton = builder.get_object("startbutton") as Button;
         statuslabel = builder.get_object("statuslabel") as Label;
 
-        dirchooser = builder.get_object("dirchooser") as FileChooserButton;
+        dirchooser = builder.get_object("dirchooser") as Button;
+		var dirlabel = builder.get_object("dirlabel") as Label;
         ComboBoxText audiosource = builder.get_object("audiosource") as ComboBoxText;
         CheckButton audiorecord =  builder.get_object("audiorecord") as CheckButton;
         CheckButton mouserecord =  builder.get_object("mouserecord") as CheckButton;
@@ -85,15 +86,34 @@ public class MyApplication : Gtk.Application {
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
+		stopwindow = builder.get_object("stopwindow") as Window;
+		var stoprecbutton = builder.get_object("stoprecbutton") as Button;
+		stopwindow.close_request.connect(() => {
+				stopwindow.hide();
+				return false;
+			});
+
+		stoprecbutton.clicked.connect(() => {
+				do_stop_action();
+			});
 
         about.version = WAYFARER_VERSION_STRING;
+		about.set_transient_for(window);
+		about.modal = true;
+		about.authors = {"Jonathan Hudson <jh+github@daria.co.uk>"};
 
-        about.delete_event.connect (() => {
+		prefs.set_transient_for(window);
+		prefs.modal = true;
+		var pbox = prefs.get_content_area();
+		var pstuff = builder.get_object ("prefsstuff") as Gtk.Box;
+		pbox.append(pstuff);
+
+        about.close_request.connect (() => {
                 about.hide();
                 return true;
             });
 
-        prefs.delete_event.connect (() => {
+        prefs.close_request.connect (() => {
                 prefs.hide();
                 return true;
             });
@@ -105,6 +125,30 @@ public class MyApplication : Gtk.Application {
                 prefs.hide();
             });
 
+
+		dirchooser.clicked.connect(() => {
+				Gtk.FileChooserDialog fc = new Gtk.FileChooserDialog (
+					"Video Directory",
+					active_window, Gtk.FileChooserAction.SELECT_FOLDER,
+					"_Cancel",
+					Gtk.ResponseType.CANCEL,
+					"_Select",
+					Gtk.ResponseType.ACCEPT);
+
+				try {
+					fc.set_current_folder(File.new_for_path(dirname));
+				} catch {}
+
+				fc.response.connect((result) => {
+						if (result== Gtk.ResponseType.ACCEPT) {
+							dirname = fc.get_file().get_path ();
+							dirlabel.label = Path.get_basename(dirname);
+						}
+						fc.close();
+					});
+				fc.present();
+			});
+
         var saq = new GLib.SimpleAction("quit",null);
         saq.activate.connect(() => {
                 clean_up();
@@ -113,13 +157,13 @@ public class MyApplication : Gtk.Application {
 
         saq = new GLib.SimpleAction("prefs",null);
         saq.activate.connect(() => {
-                prefs.show_all();
+                prefs.show();
             });
         window.add_action(saq);
 
         saq = new GLib.SimpleAction("about",null);
         saq.activate.connect(() => {
-                about.show_all();
+                about.show();
             });
         window.add_action(saq);
 
@@ -130,18 +174,6 @@ public class MyApplication : Gtk.Application {
             });
 
         window.set_icon_name("wayfarer");
-        ci = new Indicator("wayfarer",
-                           "wayfarer",
-                           IndicatorCategory.APPLICATION_STATUS);
-        var menu = new Gtk.Menu();
-        var stoprecordingbutton = new Gtk.MenuItem.with_label("Stop Recording");
-
-        stoprecordingbutton.activate.connect(do_stop_action);
-        menu.append(stoprecordingbutton);
-        menu.show_all();
-
-        ci.set_menu(menu);
-        ci.set_secondary_activate_target(stoprecordingbutton);
         startbutton.clicked.connect(() => {
                 sc.options.capmouse = mouserecord.active;
                 sc.options.capaudio = audiorecord.active;
@@ -152,43 +184,23 @@ public class MyApplication : Gtk.Application {
                 sc.options.atype = have_area;
                 sc.options.mediatype = mediasel.active_id;
 
-                dirname = dirchooser.get_filename ();
                 time_t currtime;
                 time_t(out currtime);
                 var fn  = "Wayfarer_%s".printf(Time.local(currtime).format("%F_%H%M%S"));
                 fileentry.text = fn;
                 var filepath = string.join(".", fn, mediasel.active_id);
                 var tryfile =  Path.build_filename (dirname, filepath);
-                var tmpname = fileentry.text;
-                int nfn = 0;
-                while (Utils.file_exists(tryfile)) {
-                    var res = show_conflict_dialog(tmpname);
-                    if(res < 0) // Cancel
-                        return;
-                    if(res == 1001) // Overwrite
-                        break;
-                    else {
-                        nfn++;
-                        tmpname = "%s_%d".printf(fileentry.text, nfn);
-                        filepath = string.join(".", tmpname, "mkv");
-                        tryfile =  Path.build_filename (dirname, filepath);
-                        stderr.printf("Offer %s\n", tryfile);
-                    }
-                }
-                if (nfn != 0) {
-                     fileentry.text = tmpname;
-                }
-
+				fileentry.text = tryfile;
                 sc.options.outfile = tryfile;
                 stderr.printf("Out => %s\n",  sc.options.outfile);
                 sc.options.fullscreen = fullscreen.active;
                 window.hide();
-                ci.set_status(IndicatorStatus.ACTIVE);
+				stopwindow.present();
                 var delay = delayspin.get_value();
 
                 if(use_not || use_notall) {
                     if(delay < 2) {
-                        nt.send_notification("Ready to record", "", (use_notall)? 0 :1000);
+                        nt.send_notification("Ready to record", "Close me to stop", (use_notall) ? 0 :1000);
                     } else {
                         var ctr = (int)(delay);
                         var str = "Starting in %ds\n".printf(ctr);
@@ -196,7 +208,7 @@ public class MyApplication : Gtk.Application {
                         ctr--;
                         Timeout.add_seconds(1, () => {
                                 str = "Starting in %ds\n".printf(ctr);
-                                nt.send_notification("Ready to record", (ctr>1) ? str : "", (use_notall)? 0 :1000);
+                                nt.send_notification("Ready to record", (ctr>1) ? str : "Close me to stop", (use_notall)? 0 :1000);
                                 ctr--;
                                 if(ctr <= 0)
                                     return Source.REMOVE;
@@ -222,9 +234,8 @@ public class MyApplication : Gtk.Application {
                                   Source.remove(timerid);
                                   timerid = 0;
                               }
-                              ci.set_status(IndicatorStatus.PASSIVE);
                               statuslabel.label = "Failed to record";
-                              window.show_all();
+                              window.show();
                         }
                         return Source.REMOVE;
                     });
@@ -244,7 +255,7 @@ public class MyApplication : Gtk.Application {
 
         if(at.length == 0) {
             stderr.puts("No audio sources found\n");
-            //quit();
+            quit();
 			audiorecord.active = false;
         }
 
@@ -286,8 +297,9 @@ public class MyApplication : Gtk.Application {
 			mediasel.active_id = msel;
 		}
 
-        if(dirname != null)
-            dirchooser.set_current_folder(dirname);
+		if(dirname != null) {
+			dirlabel.label = Path.get_basename(dirname);
+		}
 
 		if(filename != null)
             fileentry.text = filename;
@@ -320,13 +332,14 @@ public class MyApplication : Gtk.Application {
 			pw.source_info.connect((s) => {
 					sources += s;
 				});
-
+/*
 			var ag = new Gtk.AccelGroup();
 			ag.connect('p', Gdk.ModifierType.CONTROL_MASK, 0, (a,o,k,m) => {
 					pw.invalidate();
 					return true;
 				});
 			window.add_accel_group(ag);
+*/
 		}
 
         areabutton.clicked.connect(() => {
@@ -343,7 +356,7 @@ public class MyApplication : Gtk.Application {
                 if(use_notall)
                     do_stop_action();
             });
-        window.show_all ();
+        window.show ();
     }
 
     private void run_area_selection() {
@@ -411,27 +424,6 @@ public class MyApplication : Gtk.Application {
 		startbutton.sensitive = startok;
     }
 
-    private int show_conflict_dialog(string filename)
-    {
-        var dialog = new Gtk.Dialog.with_buttons ("File Conflict",
-                                                  window,
-                                                  Gtk.DialogFlags.MODAL|Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                                                  "Overwrite",
-                                                  1001,
-                                                  "Auto-rename",
-                                                  1002,
-                                                  "_Cancel",
-                                                  ResponseType.REJECT,
-                                                  null);
-        var  content_area = dialog.get_content_area ();
-        var label = new Gtk.Label("File %s exists\nPlease select a resolution".printf(filename));
-        content_area.add(label);
-        dialog.show_all();
-        var res = dialog.run();
-        dialog.destroy();
-        return res;
-    }
-
     private void do_stop_action()
     {
         if(timerid > 0) {
@@ -439,8 +431,8 @@ public class MyApplication : Gtk.Application {
             timerid = 0;
         }
         nt.close_last();
-        ci.set_status(IndicatorStatus.PASSIVE);
-        window.show_all();
+		stopwindow.hide();
+        window.show();
         sc.post_process();
     }
 
@@ -465,7 +457,6 @@ public class MyApplication : Gtk.Application {
 
 
     private void clean_up() {
-		dirname = dirchooser.get_filename ();
 		msel = mediasel.active_id;
         save_config();
         quit();

@@ -7,9 +7,19 @@ app = 'wayfarer'
 
 gnome = import('gnome')
 
+blueprints = custom_target('blueprints',
+  input: files(
+    'data/wayfarer.blp',
+  ),
+  output: '.',
+  command: [find_program('blueprint-compiler'), 'batch-compile', '@OUTPUT@', '@CURRENT_SOURCE_DIR@', '@INPUT@'],
+)
+
+
 wresources = gnome.compile_resources(
     'w-resources',
     join_paths('data', app + '.gresource.xml'),
+    dependencies: blueprints,
     source_dir: 'data',
     c_name: 'w'
 )
@@ -23,13 +33,6 @@ configure_file(
 )
 configuration_inc = include_directories('build')
 
-appind_dep  = dependency('appindicator3-0.1', required : false)
-if appind_dep.found()
-   deps = [ dependency('appindicator3-0.1') ]
-else
-    deps  = [ dependency('ayatana-appindicator3-0.1') ]
-endif
-
 subdir('src')
 
 executable(
@@ -37,10 +40,10 @@ executable(
     wresources,
     wguisrcs,
     dependencies: [
-        dependency('gtk+-3.0'),
+        dependency('gtk4'),
         dependency('gstreamer-1.0'),
 	dependency('gio-2.0'),
-	dependency('libportal'),
+	dependency('libportal-gtk4'),
 	deps,
         meson.get_compiler('vala').find_library('posix'),
 	],

@@ -25,28 +25,24 @@ public class Notify : GLib.Object
     private bool is_valid = false;
     private uint lastid;
 
-    public Notify()
-    {
-        try
-        {
+    public Notify() {
+        try {
             dtnotify = Bus.get_proxy_sync (BusType.SESSION, "org.freedesktop.Notifications",
                                      "/org/freedesktop/Notifications");
-            _ht = new HashTable<string, uint8>(null,null);
-            _ht.insert ("urgency", 0);
+            _ht = new HashTable<string, Variant>(null,null);
+            _ht.insert ("urgency", (uint8)2);
+			_ht.insert ("resident", (bool)true);
             is_valid = true;
-
         } catch {
             is_valid = false;
         }
     }
 
-    public void send_notification(string summary,  string text="", int32 timeout=2000)
-    {
-        try
-        {
+    public void send_notification(string summary,  string text="", int32 timeout=2000) {
+        try {
             if (is_valid) {
                 string []acts = {"default", ""};
-                var res = dtnotify.Notify ("wayfarer", lastid,"wayfarer", summary, text, acts, _ht, timeout);
+                var res = dtnotify.Notify ("wayfarer", lastid, "wayfarer", summary, text, acts, _ht, timeout);
                 lastid = res;
             }
         } catch {
@@ -54,22 +50,19 @@ public class Notify : GLib.Object
         }
     }
 
-    public void close_last()
-    {
+    public void close_last() {
         try {
             dtnotify.CloseNotification(lastid);
         } catch {}
     }
 
-    public void on_closed(DelegateUU d)
-    {
+    public void on_closed(DelegateUU d) {
         dtnotify.notification_closed.connect((id, reason) => {
                 d(id,reason);
             });
     }
 
-    public void on_action(DelegateUS d)
-    {
+    public void on_action(DelegateUS d) {
         dtnotify.action_invoked.connect((id, actid) => {
                 d(id,actid);
             });

@@ -12,4 +12,4 @@ install_data(
     install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'apps')
 )
 
-install_data('wayfarer.desktop', install_dir : get_option('datadir') / 'applications')
+install_data('org.stronnag.wayfarer.desktop', install_dir : get_option('datadir') / 'applications')
