@@ -13,19 +13,20 @@ Does not support other desktops.
 
 Requires:
 
+* GTK 4
+* Vala
+* Gstreamer 1.0
+* XDG Portal
+* (optional, can be installed locally by the build system), Blueprint (GTK Builder compiler).
+
+There is also a  GTK3 branch
+
 * GTK 3
 * Vala
 * Gstreamer 1.0
 * AppIndicator
 * XDG Portal
 
-There is also a  GTK4 branch
-
-* GTK 4
-* Vala
-* Gstreamer 1.0
-* XDG Portal
-* (optional, can be installed locally by the build system), Blueprint (GTK Builder compiler).
 
 **wayfarer** supports MKV, MP4 and WEB video container (vp8, mp4) and Opus as the audio format.
 
@@ -37,6 +38,9 @@ wayfarer uses the XDG Portal on modern Gnome desktops, with all the pain and dim
 
 ## Building
 
+
+### GTK3 extra dependency
+
 Appindicator is a build time GTK3 (only) dependency; at runtime, if you have an appindicator Gnome Shell extension installed, you can use the indicator to stop recording; without such an indicator, you can use Notification, with a less good user experience.
 
 * For Arch Linux, install `libappindicator-gtk3`.
@@ -44,6 +48,8 @@ Appindicator is a build time GTK3 (only) dependency; at runtime, if you have an 
 * For Fedora, try `libappindicator-gtk3-devel`
 
 For GTK4, a small "Stop Recording" window is displayed instead.
+
+### General
 
 Other requirements:
 
