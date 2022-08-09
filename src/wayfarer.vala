@@ -53,8 +53,13 @@ public class MyApplication : Gtk.Application {
     }
 
     protected override void activate () {
-        Builder builder;
-        builder = new Builder.from_resource("/org/stronnag/wayfarer/wayfarer.ui");
+		if(active_window == null) {
+			present_window();
+		}
+	}
+
+	private void present_window() {
+        var builder = new Builder.from_resource("/org/stronnag/wayfarer/wayfarer.ui");
         window = builder.get_object ("window") as Gtk.ApplicationWindow;
         this.add_window (window);
         window.set_application (this);
