@@ -24,13 +24,13 @@ namespace Utils {
 		sb.append(" ! queue");
 		switch(o.mediatype) {
 		case "mkv":
-			sb.append(" ! matroskamux name=mux");
+			sb.append(" ! matroskamux");
 			break;
 		case "mp4":
-			sb.append(" ! mp4mux name=mux");
+			sb.append(" ! mp4mux");
 			break;
 		case "webm":
-			sb.append(" ! webmmux name=mux");
+			sb.append(" ! webmmux");
 			break;
 		}
 		sb.append(" name=mux");
