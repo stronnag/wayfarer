@@ -6,10 +6,10 @@
 
 * Modern GNOME desktop (Arch, Fedora, Debian Testing, Ubuntu 22.04)
 * Wayland or Xorg
-* Pipewire / Pusleaudio / libportal (XDG Desktop Portal)
+* Pipewire / Pulseaudio / libportal (XDG Desktop Portal)
 * Wireplumber recommended
 
-Does not support other desktops.
+In X11 mode, it may support other desktops (untested); in Wayland mode, it does NOT support other desktops.
 
 Requires:
 
@@ -30,14 +30,13 @@ There is also a  GTK3 branch
 
 **wayfarer** supports MKV, MP4 and WEB video container (vp8, mp4) and Opus as the audio format.
 
-wayfarer uses the XDG Portal on modern Gnome desktops, with all the pain and diminished functionality that implies.
+wayfarer uses the XDG Portal on modern GNOME desktops, with all the pain and diminished functionality that the portal implies.
 
 * Portal connection is set to persist, pressing Control-P clears the persistent state, re-enabling the portal monitor selection screen.
 * Selection across multiple monitors and full screen across multiple monitors is available
 * Window selection is not supported, as the libportal support is not useful.
 
 ## Building
-
 
 ### GTK3 extra dependency
 
@@ -103,4 +102,4 @@ Preferences are stored as a simple `key = value` text file in `~/.config/wayfare
 Licence : GPL v3 or later
 (c) Jonathan Hudson 2021,2022
 
-Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the developer's pain with the moving targets of Gnome, Wayland, Pipewire and XDG Portal.
+Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the other developer's pain with the ever moving targets of Gnome, Wayland, Pipewire and XDG Portal.
