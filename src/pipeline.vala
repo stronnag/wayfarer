@@ -36,15 +36,16 @@ class ScreenGrab : GLib.Object {
         var audiorate = ElementFactory.make("audiorate", null);
         var audioconvert = ElementFactory.make("audioconvert", null);
         var queue = ElementFactory.make("queue", null);
-        if (o.audiorate != 0) {
-            o.audiorate = 48000;
-        }
         var sample_rate_filter = new Caps.simple("audio/x-raw", "rate", typeof(int), o.audiorate);
         stderr.printf("sample filter %s\n",  sample_rate_filter.to_string());
         bin.add_many(audiomixer, audiorate, audioconvert, queue);
 
         var ret = audiomixer.link_filtered(audiorate, sample_rate_filter);
-        stderr.printf("audiomixer link result is %s\n", ret.to_string());
+        if (ret == false) {
+            stderr.printf("audiomixer link fails\n");
+            return null;
+        }
+
         if (audiorate.link_many(audioconvert, queue) == false) {
             stderr.printf("audiorate link fails\n");
             return null;
@@ -81,6 +82,7 @@ class ScreenGrab : GLib.Object {
         bin.add_many(compositor, videoconvert, queue);
         if (compositor.link(videoconvert) == false) {
             stderr.printf("comp link fails\n");
+            return null;
         }
 
         if (!o.fullscreen) {
@@ -104,30 +106,36 @@ class ScreenGrab : GLib.Object {
             bin.add_many(videoscale, videocrop);
             if (videoconvert.link(videoscale) == false) {
                 stderr.printf("conv link fails\n");
+                return null;
             }
             if (videoscale.link_filtered(videocrop, videoscale_filter) == false) {
                 stderr.printf("scale link fails\n");
+                return null;
             }
             if (videocrop.link(queue) == false) {
                 stderr.printf("crop link fails\n");
+                return null;
             }
         } else {
             if (videoconvert.link(queue) == false) {
                 stderr.printf("vidconv link fails\n");
+                return null;
             }
         }
 
         var videorate_filter = new Caps.simple("video/x-raw", "framerate", typeof (Fraction),
                                                o.framerate, 1);
         int last_pos = 0;
+        var link_ok = true;
         si.foreach((s) => {
                 var pipewiresrc =  pipewiresrc_default(o.fd, s.node_id);
                 var videorate = ElementFactory.make("videorate", null);
                 var videorate_capsfilter = ElementFactory.make("capsfilter", null);
                 videorate_capsfilter.set("caps", videorate_filter);
                 bin.add_many(pipewiresrc, videorate, videorate_capsfilter);
-                if (pipewiresrc.link_many(videorate, videorate_capsfilter) == false) {
+                if ((link_ok = pipewiresrc.link_many(videorate, videorate_capsfilter)) == false) {
                     stderr.printf("pipewiresrc link fails\n");
+                    return;
                 }
                 var compositor_sink_pad = compositor.request_pad_simple("sink_%u");
                 compositor_sink_pad["xpos"] = last_pos;
@@ -135,12 +143,18 @@ class ScreenGrab : GLib.Object {
                 var vcfret = vcf.link(compositor_sink_pad);
                 if (vcfret != Gst.PadLinkReturn.OK) {
                     stderr.printf("vcf link result is %s\n", vcfret.to_string());
+                    link_ok = false;
+                    return;
                 }
                 last_pos += s.width;
             });
-        var queue_pad = queue.get_static_pad("src");
-        bin.add_pad(new GhostPad("src", queue_pad));
-        return bin;
+        if (link_ok) {
+            var queue_pad = queue.get_static_pad("src");
+            bin.add_pad(new GhostPad("src", queue_pad));
+            return bin;
+        } else {
+            return null;
+        }
     }
 
     Gst.Bin? x11src_bin(ScreenCap.Options o) {
@@ -186,16 +200,24 @@ class ScreenGrab : GLib.Object {
         }
 
         videosrc_bin = (o.fd != -1) ? pipewiresrc_bin(o, sis) : x11src_bin(o);
+        if (videosrc_bin == null) {
+            return null;
+        }
         pipeline.add(videosrc_bin);
 
         if (o.capaudio) {
             audiosrc_bin =  pulsesrc_bin(o);
             if (audiosrc_bin != null) {
                 pipeline.add(audiosrc_bin);
+            } else {
+                stderr.printf("Not adding audio pipeline\n");
             }
         }
-
-        finalise_pipeline(profile);
+        if (pipeline != null) {
+            if (finalise_pipeline(profile) == false) {
+                pipeline = null;
+            }
+        }
         return pipeline;
     }
 
@@ -207,7 +229,7 @@ class ScreenGrab : GLib.Object {
         return Path.build_filename (dirname, filepath);
     }
 
-    public void finalise_pipeline (Encoders.EProfile ep) {
+    public bool finalise_pipeline (Encoders.EProfile ep) {
         var cp = Encoders.get_container_profile(ep);
         var ebin = Gst.ElementFactory.make ("encodebin", null);
         ebin.set("profile", cp);
@@ -217,15 +239,21 @@ class ScreenGrab : GLib.Object {
         var ret = vsp.link(espv);
         if (ret !=  Gst.PadLinkReturn.OK) {
             stderr.printf("videosrc link result %s\n", ret.to_string());
+            return false;
         }
-        var asp = audiosrc_bin.get_static_pad("src");
-        var espa = ebin.request_pad_simple("audio_%u");
-        ret = asp.link(espa);
-        if (ret !=  Gst.PadLinkReturn.OK) {
-            stderr.printf("audiosrc link %s\n", ret.to_string());
+        if (audiosrc_bin != null) {
+            var asp = audiosrc_bin.get_static_pad("src");
+            var espa = ebin.request_pad_simple("audio_%u");
+            ret = asp.link(espa);
+            if (ret !=  Gst.PadLinkReturn.OK) {
+                stderr.printf("audiosrc link %s\n", ret.to_string());
+                return false;
+            }
         }
         if (ebin.link(queue) == false) {
             stderr.printf("encoderbin link to queue fails\n");
+            return false;
         }
+        return true;
     }
 }

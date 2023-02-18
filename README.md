@@ -9,7 +9,7 @@
 * Pipewire / Pulseaudio / libportal (XDG Desktop Portal)
 * Wireplumber recommended
 
-In X11 mode, it may support other desktops (untested); in Wayland mode, it does NOT support other desktops.
+In X11 mode, it may support other desktops (untested); in Wayland mode, other desktops are not supported (but may "work").
 
 Requires:
 
@@ -28,7 +28,7 @@ There is also a  GTK3 branch
 * XDG Portal
 
 
-**wayfarer** supports MKV, MP4 and WEB video container (vp8, mp4) and Opus as the audio format.
+**wayfarer** supports MKV, MP4 and WebM video container (vp8, mp4) and Opus as the audio format.
 
 wayfarer uses the XDG Portal on modern GNOME desktops, with all the pain and diminished functionality that the portal implies.
 
@@ -53,15 +53,15 @@ For GTK4, a small "Stop Recording" window is displayed instead.
 Other requirements:
 
 * `libportal`
-* `gstreamer-vaapi`
-* `gst-inspect-1.0`, used to check if a vaapi H264 encoder is available.
+* Desktop specific visual portal selector (e.g. `xdg-desktop-portal-gnome`.
 
 The build system is meson / ninja, e.g.
 
 ```
-meson build --buildtype=release --prefix=~/.local
+# Initial setup (one-off)
+meson setup build --buildtype=release --prefix=~/.local
 # then
-meson install -C build
+ninja install -C build
 ```
 
 ## User Interface
@@ -72,7 +72,7 @@ meson install -C build
 * Select the audio source
 * `Delay` defines a delay (seconds) before recording starts
 * `Timer` defines the length of the recording (seconds) : 0 (default) means user will stop the recording.
-* `Record` starts the recording; requires a file name and either an area defined or `Fullscreen`
+* `Record` starts the recording; requires an area defined or `Fullscreen`
 
 Once recording is started:
 
@@ -100,6 +100,6 @@ Preferences are stored as a simple `key = value` text file in `~/.config/wayfare
 ## Miscellaneous
 
 Licence : GPL v3 or later
-(c) Jonathan Hudson 2021,2022
+(c) Jonathan Hudson 2021-2023
 
-Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the other developer's pain with the ever moving targets of Gnome, Wayland, Pipewire and XDG Portal.
+Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the other developer's pain with the ever moving targets of Gnome, Wayland, Pipewire and XDG Portal, in particularly `kooha`'s guidance on the workings of GStreamer.

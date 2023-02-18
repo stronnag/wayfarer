@@ -15,7 +15,9 @@ public class AreaWindow : Gtk.Window {
 		fill = Gdk.RGBA(){red = 1.0f, green = 1.0f, blue = 1.0f, alpha= 0.2f};
 		stroke = Gdk.RGBA(){red = 0.0f, green = 0.2f, blue = 0.8f, alpha = 0.8f};
 
-		set_cursor_from_name("crosshair");
+        title = "Wayfarer";
+
+        set_cursor_from_name("crosshair");
 		remove_css_class("background");
 
 		var evtc = new EventControllerKey ();
