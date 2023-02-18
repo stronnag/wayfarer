@@ -1,6 +1,5 @@
 using Gtk;
-//using AppIndicator;
-
+using Gst;
 
 public class MyApplication : Gtk.Application {
     Gtk.ApplicationWindow window;
@@ -27,38 +26,30 @@ public class MyApplication : Gtk.Application {
 	private Window stopwindow;
 
 	private int fd;
-	private int x0;
-	private int y0;
-	private int x1;
-	private int y1;
+    GenericArray<PortalManager.SourceInfo?> sources;
 
-	private PortalManager.SourceInfo []sources = {};
-
-    public static bool fallback_x11;
-	public static bool no_vaapi;
     public static bool show_version;
 
 	private AreaWindow sw;
 
     const OptionEntry[] options = {
-        { "fallback", 'f', 0, OptionArg.NONE, out fallback_x11, "fallback option", null},
-        { "no-vaapi", 0,  0, OptionArg.NONE, out no_vaapi, "don't use vaapi encoders", null},
         { "version", 'v', 0, OptionArg.NONE, out show_version, "show version", null},
         {null}
     };
 
     public MyApplication () {
-        Object(application_id: "org.stronnag.wayfarer",
+        GLib.Object(application_id: "org.stronnag.wayfarer",
                flags:ApplicationFlags.FLAGS_NONE);
     }
 
     protected override void activate () {
+        fd = -255;
 		if(active_window == null) {
 			present_window();
 		}
 	}
 
-	private void present_window() {
+    private void present_window() {
         var builder = new Builder.from_resource("/org/stronnag/wayfarer/wayfarer.ui");
         window = builder.get_object ("window") as Gtk.ApplicationWindow;
         this.add_window (window);
@@ -91,7 +82,14 @@ public class MyApplication : Gtk.Application {
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
-		stopwindow = builder.get_object("stopwindow") as Window;
+
+        foreach (var e in Encoders.list_profiles()) {
+            if (e.is_valid) {
+                mediasel.append(e.name, e.pname);
+            }
+        }
+
+        stopwindow = builder.get_object("stopwindow") as Window;
 		var stoprecbutton = builder.get_object("stoprecbutton") as Button;
 		stopwindow.close_request.connect(() => {
 				return true;
@@ -128,7 +126,6 @@ public class MyApplication : Gtk.Application {
 				audiorate = int.parse(prefs_audiorate.text);
                 prefs.hide();
             });
-
 
 		dirchooser.clicked.connect(() => {
 				Gtk.FileChooserDialog fc = new Gtk.FileChooserDialog (
@@ -189,25 +186,20 @@ public class MyApplication : Gtk.Application {
             });
 
         window.set_icon_name("wayfarer");
+
+        sc = new ScreenCap();
+
         startbutton.clicked.connect(() => {
-                sc.options.capmouse = mouserecord.active;
                 sc.options.capaudio = audiorecord.active;
+                sc.options.capmouse = mouserecord.active;
                 sc.options.framerate = framerate.get_value_as_int();
                 sc.options.audiorate = audiorate;
                 sc.options.adevice = audiosource.active_id;
 				sc.options.fd = fd;
-                sc.options.atype = have_area;
                 sc.options.mediatype = mediasel.active_id;
-
-                time_t currtime;
-                time_t(out currtime);
-                var fn  = "Wayfarer_%s".printf(Time.local(currtime).format("%F_%H%M%S"));
-                fileentry.text = fn;
-                var filepath = string.join(".", fn, mediasel.active_id);
-                var tryfile =  Path.build_filename (dirname, filepath);
-                sc.options.outfile = tryfile;
-                stderr.printf("Out => %s\n",  sc.options.outfile);
                 sc.options.fullscreen = fullscreen.active;
+                sc.options.dirname = dirname;
+
                 window.hide();
 				stopwindow.present();
                 var delay = delayspin.get_value();
@@ -242,7 +234,7 @@ public class MyApplication : Gtk.Application {
                         }
                         if(!use_notall)
                             nt.close_last();
-                        var res = sc.capture(sources);
+                        var res = sc.capture(sources, out filename);
                         if (res == false) {
                               if(timerid > 0) {
                                   Source.remove(timerid);
@@ -250,18 +242,18 @@ public class MyApplication : Gtk.Application {
                               }
                               statuslabel.label = "Failed to record";
                               window.show();
+                        } else {
+                            fileentry.text = filename;
                         }
                         return Source.REMOVE;
                     });
             });
 
-        sc = new ScreenCap(fallback_x11);
 		sc.report_gst_error.connect((s) => {
 				do_stop_action();
 				statuslabel.label = s;
 			});
 
-		fallback_x11 = sc.get_x11();
         var at = sc.get_sources();
         foreach (var a in at) {
             audiosource.append(a.device,a.desc);
@@ -273,18 +265,13 @@ public class MyApplication : Gtk.Application {
 			audiorecord.active = false;
         }
 
-		sc.options.vaapis = (no_vaapi) ? 0 : check_for_vaapi();
-		sc.options.nproc = GLib.get_num_processors();
-
 		sw = new AreaWindow ();
-		sw.area_set.connect((_x0, _y0, _x1, _y1) => {
-				x0 = Utils.get_even(_x0);
-				y0 = Utils.get_even(_y0);
-				x1 = Utils.get_even(_x1);
-				y1 = Utils.get_even(_y1);
+		sw.area_set.connect((x0, y0, x1, y1) => {
 				sc.set_bbox(x0, y0, x1, y1);
-				string astr = "(%d %d) (%d %d)".printf(sc.options.x0, sc.options.y0,
-													   sc.options.x1, sc.options.y1);
+                string astr = "(%d %d) (%d %d)".printf(sc.options.selinfo.x0,
+                                                       sc.options.selinfo.y0,
+                                                       sc.options.selinfo.x1,
+                                                       sc.options.selinfo.y1);
 				if (x0 != -1 && x1 != -1) {
 					have_area = 1;
 					update_status_label(astr);
@@ -301,7 +288,7 @@ public class MyApplication : Gtk.Application {
             });
 
 		use_notall = true;
-		mediasel.active_id = "mkv";  // "good"
+		mediasel.active_id = "webm";  // "simple, fast"
 
         read_config();
 
@@ -330,39 +317,41 @@ public class MyApplication : Gtk.Application {
                 audioid = audiosource.active_id;
             });
 
-		if(!fallback_x11) {
-			pw = new PortalManager();
-			pw.complete.connect((_fd) => {
-					fd = _fd;
-					if (fd != -1 && sources.length > 0) {
-						if (sources[0].source_type == 1) {
-							run_area_selection();
-						} else {
-							have_area = 2;
-							update_status_label();
-						}
-					}
-				});
-			pw.source_info.connect((s) => {
-					sources += s;
-				});
-/*
-			var ag = new Gtk.AccelGroup();
-			ag.connect('p', Gdk.ModifierType.CONTROL_MASK, 0, (a,o,k,m) => {
-					pw.invalidate();
-					return true;
-				});
-			window.add_accel_group(ag);
-*/
-		}
+        sources = new GenericArray<PortalManager.SourceInfo?>();
+
+        bool is_x11 = (Environment.get_variable("XDG_SESSION_TYPE") == "x11");
+
+        pw = new PortalManager();
+        pw.complete.connect((_fd) => {
+                fd = _fd;
+                if (sources.length > 1) {
+                    sources.sort((a,b) => {
+                            return (int)(a.x > b.x) - (int)(a.x < b.x);
+                        });
+                }
+                if (fd > -1  && sources.length > 0 ) {
+                    if (sources[0].source_type == 1 || sources[0].source_type == 0) {
+                        run_area_selection();
+                    } else {
+                        have_area = 2;
+                        update_status_label();
+                    }
+                } else if (fd == -1) {
+                    if (is_x11) {
+                        run_area_selection();
+                    } else {
+                        statuslabel.label = "Failed run XDG Portal";
+                    }
+                }
+                startbutton.sensitive = validate_start();
+            });
+        pw.source_info.connect((s) => {
+                sources.add(s);
+            });
 
         areabutton.clicked.connect(() => {
-				sources = {};
-				if(!fallback_x11) {
-					pw.run(mouserecord.active);
-				} else {
-					run_area_selection();
-				}
+                sources.remove_range(0,sources.length);
+                pw.run(mouserecord.active);
             });
 
         nt = new Notify();
@@ -377,48 +366,19 @@ public class MyApplication : Gtk.Application {
 		if (!fullscreen.active) {
 			int mon = -1;
 			if (sources.length == 1) {
-				mon = sources[0].xpos / sources[0].width;
+				mon = sources[0].x / sources[0].width;
 			}
             sw.run (mon);
         }
     }
 
-    private int check_for_vaapi() {
-        string text;
-        int vaapis = 0;
-        var res = check_gst_vaapi(out text);
-        if(res) {
-            var parts = text.split("\n");
-            foreach (var p in parts) {
-                if (p.contains("vaapih264enc")) {
-                    vaapis |= 2;
-                } else if (p.contains("vaapivp8enc")) {
-                    vaapis |= 1;
-                }
-            }
-        }
-        return vaapis;
+    private bool validate_start() {
+        return ((fd > 0 || fd == -1) && (fullscreen.active || have_area > 0));
     }
 
-    private bool check_gst_vaapi(out string output) {
-        bool ok = true;
-        output="";
-        try {
-			var subp = new Subprocess(
-				SubprocessFlags.STDERR_MERGE|SubprocessFlags.STDOUT_PIPE,
-				"gst-inspect-1.0", "vaapi");
-			subp.communicate_utf8(null, null, out output, null);
-			subp.wait_check_async.begin();
-        } catch (Error e) {
-			output = e.message;
-			ok = false;
-		}
-        return ok;
-	}
 
     private void update_status_label(string? astr=null) {
-        var startok = (fullscreen.active || have_area > 0);
-		StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
 		if (!fullscreen.active) {
 			switch(have_area) {
 			case 0:
@@ -435,11 +395,10 @@ public class MyApplication : Gtk.Application {
 			sb.append("Full screen");
 		}
 		statuslabel.label=sb.str;
-		startbutton.sensitive = startok;
+		startbutton.sensitive = validate_start();
     }
 
-    private void do_stop_action()
-    {
+    private void do_stop_action() {
         if(timerid > 0) {
             Source.remove(timerid);
             timerid = 0;
@@ -455,7 +414,7 @@ public class MyApplication : Gtk.Application {
         string fn = null;
         var uc = Environment.get_user_config_dir();
         if(uc != null) {
-            fn = Path.build_filename (uc, "wayfarer", "cap.conf");
+            fn = Path.build_filename(uc, "wayfarer", "cap.conf");
         }
 
         var file = File.new_for_path(fn);
@@ -517,6 +476,9 @@ public class MyApplication : Gtk.Application {
 								break;
 							case "audiorate":
 								audiorate = int.parse(p1);
+                                if (audiorate == 0) {
+                                    audiorate = 48000;
+                                }
 								break;
 							case "use_not":
 								use_not = (p1 == "true");
@@ -538,9 +500,15 @@ public class MyApplication : Gtk.Application {
     }
 
     public static int main (string[] args) {
+        if (Environment.get_variable("XDG_SESSION_DESKTOP") == "gnome") {
+            Environment.set_variable("GDK_BACKEND", "x11", true);
+        }
+
+        Gst.init(ref args);
+        Encoders.Init();
+
         var opt = new OptionContext("");
-        try
-        {
+        try {
             opt.set_summary("wayfarer %s".printf(WAYFARER_VERSION_STRING));
             opt.set_help_enabled(true);
             opt.add_main_entries(options, null);

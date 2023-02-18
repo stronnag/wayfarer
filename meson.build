@@ -1,4 +1,4 @@
-project('wayfarer', 'vala', 'c', version : '0.5.0')
+project('wayfarer', 'vala', 'c', version : '0.6.0')
 
 conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
@@ -25,9 +25,10 @@ executable(
     wguisrcs,
     dependencies: [
         dependency('gtk4'),
-        dependency('gstreamer-1.0'),
 	dependency('gio-2.0'),
 	dependency('libportal'),
+        dependency('gstreamer-1.0'),
+        dependency('gstreamer-pbutils-1.0'),
 	deps,
         meson.get_compiler('vala').find_library('posix'),
 	],

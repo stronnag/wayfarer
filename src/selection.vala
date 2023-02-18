@@ -11,9 +11,7 @@ public class AreaWindow : Gtk.Window {
 	public signal void area_set(int x0, int y0, int x1, int y1);
 	public signal void area_quit();
 
-
 	public AreaWindow() {
-
 		fill = Gdk.RGBA(){red = 1.0f, green = 1.0f, blue = 1.0f, alpha= 0.2f};
 		stroke = Gdk.RGBA(){red = 0.0f, green = 0.2f, blue = 0.8f, alpha = 0.8f};
 

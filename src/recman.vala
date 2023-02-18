@@ -1,94 +1,64 @@
 
-public class ScreenCap : Object
-{
-    public struct AudioSource
-    {
+public class ScreenCap : Object {
+    public struct AudioSource {
         string device;
         string desc;
     }
 
-    private enum STATE
-    {
+    private enum STATE {
         None=0,
         Cap=1,
         Audio=2,
 		Pipewire=4
     }
 
-    public struct Options
-    {
-		string mediatype;
-        bool capmouse;
-        bool capaudio;
-        bool fullscreen;
-        bool fallback;
-        int deviceid;
+    public struct SelInfo {
+        int x0;
+        int y0;
+        int x1;
+        int y1;
+    }
+
+    public struct Options {
+		int fd;
         int framerate;
         int audiorate;
-        int delay;
         string adevice;
-        string outfile;
-		int x0;
-		int y0;
-		int x1;
-		int y1;
-		int fd;
-		uint32 node_id;
-		uint8 atype;
-		int vaapis;
-		uint nproc;
+		string dirname;
+		string mediatype;
+        SelInfo selinfo;
+        bool capaudio;
+        bool capmouse;
+        bool fullscreen;
     }
 
     private MediaRecorder mediarec;
-    private bool bsd_x11;
-
     public Options options;
 
 	public signal void report_gst_error(string s);
 
     STATE astate = STATE.None;
 
-    public ScreenCap(bool fallback=false) {
+    public ScreenCap() {
+        options={};
         mediarec = new MediaRecorder();
-//		var u = Posix.utsname();
-        if(Environment.get_variable("XDG_SESSION_TYPE") != "wayland") {
-            /* if (fallback || u.sysname == "FreeBSD") {
-            }
-			*/
-			bsd_x11 = true;
-        }
 		mediarec.report_gst_error.connect((s) => {
 				report_gst_error(s);
 			});
 	}
 
-    public bool get_x11() {
-        return bsd_x11;
-    }
-
-
-    public bool capture(PortalManager.SourceInfo []sources)
-    {
+    public bool capture(GenericArray<PortalManager.SourceInfo?>sources, out string fname) {
         bool ok = false;
-        if(!bsd_x11) {
-            ok = mediarec.StartPipewire(options, sources);
-			if (ok) {
-				astate |= STATE.Pipewire;
-			}
-        } else {
-            ok = mediarec.Capture_fallback(options);
-            if (ok) {
-                astate |= STATE.Cap;
-            }
+        ok = mediarec.StartCapture(options, sources, out fname);
+        if (ok) {
+            astate |= STATE.Pipewire;
         }
         return ok;
     }
 
-    public AudioSource [] get_sources()
-    {
+    public AudioSource [] get_sources() {
         AudioSource []at = {};
-        try
-        {
+        try {
             string[] spawn_args = {"pactl", "list", "sources"};
             Pid child_pid;
             int p_stdout;
@@ -108,8 +78,7 @@ public class ScreenCap : Object
             size_t len = 0;
             string lname = null;
             for(;;) {
-                try
-                {
+                try {
                     IOStatus eos = out.read_line (out line, out len, null);
                     if(eos == IOStatus.EOF)
                         break;
@@ -133,7 +102,6 @@ public class ScreenCap : Object
             }
             try { out.shutdown(false); } catch {}
             Process.close_pid (child_pid);
-
         } catch (SpawnError e) {
             print(e.message);
         }
@@ -147,19 +115,23 @@ public class ScreenCap : Object
 
 	public void set_bbox(int x0, int y0, int x1, int y1) {
 		if(x1 > x0) {
-			options.x0 = x0;
-			options.x1 = x1;
+			options.selinfo.x0 = x0;
+			options.selinfo.x1 = x1;
 		} else {
-			options.x0 = x1;
-			options.x1 = x0;
+			options.selinfo.x0 = x1;
+			options.selinfo.x1 = x0;
 		}
 
 		if(y1 > y0) {
-			options.y0 = y0;
-			options.y1 = y1;
+			options.selinfo.y0 = y0;
+			options.selinfo.y1 = y1;
 		} else {
-			options.y0 = y1;
-			options.y1 = y0;
+			options.selinfo.y0 = y1;
+			options.selinfo.y1 = y0;
 		}
-	}
+        Utils.get_even(ref options.selinfo.x0, false);
+        Utils.get_even(ref options.selinfo.x1, true);
+        Utils.get_even(ref options.selinfo.y0, false);
+        Utils.get_even(ref options.selinfo.y1, true);
+    }
 }

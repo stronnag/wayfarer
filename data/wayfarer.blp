@@ -87,12 +87,6 @@ Gtk.ApplicationWindow window {
 	}
 
 	Gtk.ComboBoxText media_sel {
-	  items [
-	    mp4: "mp4",
-	    mkv: "mkv",
-	    webm: "webm",
-	  ]
-	  active-id: "mp4";
         }
      }
      // Row 2
@@ -244,7 +238,7 @@ Gtk.Box prefsstuff {
 	}
 	Gtk.Entry prefs_audiorate {
 	 halign: fill;
-	 placeholder-text: "Audio bitrate (0 = default)";
+	 placeholder-text: "Audio bitrate";
 	 input-purpose: digits;
 	}
        }

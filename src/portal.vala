@@ -6,8 +6,8 @@ public class PortalManager : Object {
 	public struct SourceInfo {
 		int width;
 		int height;
-		int xpos;
-		int ypos;
+		int x;
+		int y;
 		uint32 source_type;
 		uint32 node_id;
 	}
@@ -16,22 +16,26 @@ public class PortalManager : Object {
 	public signal void source_info(SourceInfo si);
 
 	private Xdp.Portal p;
-	private string persist = null;
+	private string token = null;
 
 	public PortalManager() {
 		p = new Xdp.Portal();
 	}
 
 	public void invalidate() {
-		persist = null;
+        token = null;
 	}
+
+	public string get_token() {
+        return token;
+    }
 
 	public void run (bool want_mouse) {
 		p.create_screencast_session.begin(
-			Xdp.OutputType.MONITOR, // |Xdp.OutputType.WINDOW, // FIXME
-			Xdp.ScreencastFlags.MULTIPLE, // FIXME
+			Xdp.OutputType.MONITOR,
+			Xdp.ScreencastFlags.MULTIPLE,
 			(want_mouse) ? Xdp.CursorMode.EMBEDDED : Xdp.CursorMode.HIDDEN,
-			Xdp.PersistMode.PERSISTENT, persist, null, (obj, res) => {
+			Xdp.PersistMode.PERSISTENT, token, null, (obj, res) => {
 				try {
 					var session = p.create_screencast_session.end(res);
 					session.start.begin(null, null, (obj,res) => {
@@ -39,7 +43,7 @@ public class PortalManager : Object {
 								GLib.Variant? val = null;
 								var ok = session.start.end(res);
 								if (ok) {
-									persist = session.get_restore_token ();
+									token = session.get_restore_token ();
 									var streams = session.get_streams();
 									var iter = streams.iterator();
 									while ((val = iter.next_value()) != null) {
@@ -67,8 +71,8 @@ public class PortalManager : Object {
 														val2.get_child (1, "i", &si.height);
 														break;
 													case "position":
-														val2.get_child (0, "i", &si.xpos);
-														val2.get_child (1, "i", &si.ypos);
+														val2.get_child (0, "i", &si.x);
+														val2.get_child (1, "i", &si.y);
 														break;
 													}
 												}
@@ -80,40 +84,18 @@ public class PortalManager : Object {
 									int fd = session.open_pipewire_remote();
 									complete(fd);
 								} else {
-									complete(-1);
+                                    print("portal complete\n");
+									complete(-3);
 								}
 							} catch (Error e) {
-								print("start error %s\n", e.message);
-								complete(-1);
+								print("portal %s\n", e.message);
+								complete(-2);
 						}
 					});
 				} catch (Error e) {
-					print("start error %s\n", e.message);
+					print("portal session: %s\n", e.message);
 					complete(-1);
 				}
 			});
 	}
 }
-
-#if TEST
-	public static int main(string? [] args) {
-		var loop = new MainLoop();
-		var pw = new PortalManager();
-		pw.complete.connect((fd) => {
-				if (fd == -1) {
-					loop.quit();
-				}
-				print("Got fd = %d\n", fd);
-			});
-		pw.source_info.connect((s) => {
-				print("si = %u %d %d %d %d %u\n", s.node_id, s.width, s.height,s.xpos,s.ypos,s.source_type);
-			});
-
-		Timeout.add(5, () => {
-				pw.run();
-				return false;
-			});
-		loop.run();
-		return 0;
-	}
-#endif
