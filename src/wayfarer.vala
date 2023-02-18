@@ -44,6 +44,7 @@ public class MyApplication : Gtk.Application {
 
     protected override void activate () {
         fd = -255;
+        audiorate = 48000;
 		if(active_window == null) {
 			present_window();
 		}
@@ -201,12 +202,15 @@ public class MyApplication : Gtk.Application {
                 sc.options.dirname = dirname;
 
                 window.hide();
-				stopwindow.present();
+
+                if (!use_notall)
+                    stopwindow.present();
+
                 var delay = delayspin.get_value();
 
                 if(use_not || use_notall) {
                     if(delay < 2) {
-                        nt.send_notification("Ready to record", "Close me to stop", (use_notall) ? 0 :1000);
+                        nt.send_notification("Ready to record", "Click me to stop", (use_notall) ? 0 :1000);
                     } else {
                         var ctr = (int)(delay);
                         var str = "Starting in %ds\n".printf(ctr);
