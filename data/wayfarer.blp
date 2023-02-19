@@ -87,12 +87,6 @@ Gtk.ApplicationWindow window {
 	}
 
 	Gtk.ComboBoxText media_sel {
-	  items [
-	    mp4: "mp4",
-	    mkv: "mkv",
-	    webm: "webm",
-	  ]
-	  active-id: "mp4";
         }
      }
      // Row 2
@@ -244,7 +238,7 @@ Gtk.Box prefsstuff {
 	}
 	Gtk.Entry prefs_audiorate {
 	 halign: fill;
-	 placeholder-text: "Audio bitrate (0 = default)";
+	 placeholder-text: "Audio bitrate";
 	 input-purpose: digits;
 	}
        }
@@ -284,17 +278,24 @@ Gtk.AboutDialog wayfarerabout {
 }
 
 Gtk.Window stopwindow {
-  default-width: "160";
+  default-width: 160;
   title: "Wayfarer";
   Gtk.Button stoprecbutton {
    Gtk.Box {
+    spacing: 4;
+    orientation: horizontal;
     [start]
     Gtk.Image {
       icon-name: "media-playback-stop-symbolic";
     }
     Gtk.Label {
-      label: "Stop Recording";
+      label: "Stop";
    }
+    Gtk.Label runtimer {
+      label: "00:00";
+       halign: fill;
+       hexpand: true;
+    }
   }
  }
 }
