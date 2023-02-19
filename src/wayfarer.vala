@@ -282,23 +282,6 @@ public class MyApplication : Gtk.Application {
 			audiorecord.active = false;
         }
 
-		sw = new AreaWindow ();
-		sw.area_set.connect((x0, y0, x1, y1) => {
-				sc.set_bbox(x0, y0, x1, y1);
-                string astr = "(%d %d) (%d %d)".printf(sc.options.selinfo.x0,
-                                                       sc.options.selinfo.y0,
-                                                       sc.options.selinfo.x1,
-                                                       sc.options.selinfo.y1);
-				if (x0 != -1 && x1 != -1) {
-					have_area = 1;
-					update_status_label(astr);
-				} else {
-					have_area = 0;
-					update_status_label();
-				}
-				sw.hide();
-			});
-
 		Unix.signal_add(Posix.Signal.USR1, () => {
                 do_stop_action();
                 return Source.CONTINUE;
@@ -385,6 +368,29 @@ public class MyApplication : Gtk.Application {
 			if (sources.length == 1) {
 				mon = sources[0].x / sources[0].width;
 			}
+            sw = new AreaWindow ();
+            sw.area_set.connect((x0, y0, x1, y1) => {
+                    sc.set_bbox(x0, y0, x1, y1);
+                    string astr = "(%d %d) (%d %d)".printf(sc.options.selinfo.x0,
+                                                           sc.options.selinfo.y0,
+                                                           sc.options.selinfo.x1,
+                                                           sc.options.selinfo.y1);
+                    stderr.printf("dbg: %s\n", astr);
+                    if (x0 != -1 && x1 != -1) {
+                        have_area = 1;
+                        update_status_label(astr);
+                    } else {
+                        have_area = 0;
+                        update_status_label();
+                    }
+                    sw.destroy();
+                    sw = null;
+			});
+
+            sw.area_quit.connect(() => {
+                    sw.destroy();
+                    sw = null;
+                });
             sw.run (mon);
         }
     }
