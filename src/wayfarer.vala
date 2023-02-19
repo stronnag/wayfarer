@@ -307,6 +307,7 @@ public class MyApplication : Gtk.Application {
 		use_notall = true;
 		mediasel.active_id = "webm";  // "simple, fast"
 
+        pw = new PortalManager(null);
         read_config();
 
 		prefs_audiorate.text = audiorate.to_string();
@@ -338,7 +339,6 @@ public class MyApplication : Gtk.Application {
 
         bool is_x11 = (Environment.get_variable("XDG_SESSION_TYPE") == "x11");
 
-        pw = new PortalManager();
         pw.complete.connect((_fd) => {
                 fd = _fd;
                 if (sources.length > 1) {
@@ -470,6 +470,10 @@ public class MyApplication : Gtk.Application {
 				fp.printf("use_not = %s\n", use_not.to_string());
 				fp.printf("use_notall = %s\n", use_notall.to_string());
 				fp.printf("media_type = %s\n", msel);
+                var t = pw.get_token();
+                if (t != null) {
+                    fp.printf("token = %s\n", t);
+                }
 			}
         }
     }
@@ -510,6 +514,10 @@ public class MyApplication : Gtk.Application {
 							case "media_type":
 								msel = p1;
 								break;
+							case "token":
+                                pw.set_token(p1);
+								break;
+
                             }
                         }
                     }

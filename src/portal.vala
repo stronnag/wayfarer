@@ -16,9 +16,10 @@ public class PortalManager : Object {
 	public signal void source_info(SourceInfo si);
 
 	private Xdp.Portal p;
-	private string token = null;
+	private string token;
 
-	public PortalManager() {
+	public PortalManager(string? t) {
+        token = t;
 		p = new Xdp.Portal();
 	}
 
@@ -28,6 +29,10 @@ public class PortalManager : Object {
 
 	public string get_token() {
         return token;
+    }
+
+	public void set_token(string _t) {
+        token = _t;
     }
 
 	public void run (bool want_mouse) {
