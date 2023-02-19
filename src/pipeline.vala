@@ -158,26 +158,37 @@ class ScreenGrab : GLib.Object {
     }
 
     Gst.Bin? x11src_bin(ScreenCap.Options o) {
-        string area="";
-
-        if (!o.fullscreen) {
-            stderr.printf("crop: left %d, top %d, right %d bottom %d\n",
-                          o.selinfo.x0, o.selinfo.y0, o.selinfo.x1, o.selinfo.y1);
-            area = "startx=%d starty=%d endx=%d endy=%d".printf(o.selinfo.x0, o.selinfo.y0, o.selinfo.x1+1, o.selinfo.y1+1);
-        }
-
         var display = Environment.get_variable("DISPLAY");
         if (display == null) {
             display = ":0";
         }
+        var bin = new Gst.Bin(null);
+        var queue = ElementFactory.make("queue", null);
+        var videoconvert = videoconvert_default();
+        var x11src = ElementFactory.make("ximagesrc", null);
+        x11src.set("display-name", display);
+        x11src.set("show-pointer", o.capmouse);
+        x11src.set("use-damage", true);
+        if (! o.fullscreen) {
+            x11src.set("startx", o.selinfo.x0);
+            x11src.set("starty", o.selinfo.y0);
+            x11src.set("endx", o.selinfo.x1+1);
+            x11src.set("endy", o.selinfo.y1+1);
+        }
+        var rate_filter = new Caps.simple("video/x-raw", "framerate",
+                                          typeof(Fraction), o.framerate, 1);
+        var capsfilter = ElementFactory.make("capsfilter", null);
+        capsfilter.set("caps", rate_filter);
 
-        var str = "ximagesrc display-name=%s show-pointer=%s %s ! video/x-raw, framerate=%d/1 ! videoconvert chroma-mode=GST_VIDEO_CHROMA_MODE_NONE dither=GST_VIDEO_DITHER_NONE matrix-mode=GST_VIDEO_MATRIX_MODE_OUTPUT_ONLY n-threads=%u ! queue".printf(display, o.capmouse.to_string(), area, o.framerate, Encoders.preferred_threads());
-        stderr.printf("X11: %s\n", str);
-        try {
-            var bin = Gst.parse_bin_from_description (str, true);
-            return (Gst.Bin)bin;
-        } catch {}
-        return null;
+        bin.add_many(x11src, capsfilter, videoconvert, queue);
+        if (x11src.link_many(capsfilter, videoconvert, queue) == false) {
+            stderr.printf("Failed to link X11 elements");
+            return null;
+        }
+
+        var queue_pad = queue.get_static_pad("src");
+        bin.add_pad(new GhostPad("src", queue_pad));
+        return bin;
     }
 
     public Gst.Pipeline? generate_pipeline(ScreenCap.Options o,
