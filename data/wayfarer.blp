@@ -282,13 +282,20 @@ Gtk.Window stopwindow {
   title: "Wayfarer";
   Gtk.Button stoprecbutton {
    Gtk.Box {
+    spacing: 4;
+    orientation: horizontal;
     [start]
     Gtk.Image {
       icon-name: "media-playback-stop-symbolic";
     }
     Gtk.Label {
-      label: "Stop Recording";
+      label: "Stop";
    }
+    Gtk.Label runtimer {
+      label: "00:00";
+       halign: fill;
+       hexpand: true;
+    }
   }
  }
 }

@@ -16,6 +16,7 @@ public class MyApplication : Gtk.Application {
 
     private Notify nt;
     private uint timerid;
+    private uint runtimerid;
     private Gtk.CheckButton fullscreen;
     private Gtk.Entry fileentry;
     private Gtk.Button startbutton;
@@ -24,6 +25,7 @@ public class MyApplication : Gtk.Application {
 	private Button dirchooser;
 	private ComboBoxText mediasel;
 	private Window stopwindow;
+    private Gtk.Label runtimerlabel;
 
 	private int fd;
     GenericArray<PortalManager.SourceInfo?> sources;
@@ -65,6 +67,7 @@ public class MyApplication : Gtk.Application {
         fileentry = builder.get_object("filename") as Entry;
         startbutton = builder.get_object("startbutton") as Button;
         statuslabel = builder.get_object("statuslabel") as Label;
+        runtimerlabel = builder.get_object("runtimer") as Label;
 
         dirchooser = builder.get_object("dirchooser") as Button;
 		var dirlabel = builder.get_object("dirlabel") as Label;
@@ -203,8 +206,10 @@ public class MyApplication : Gtk.Application {
 
                 window.hide();
 
-                if (!use_notall)
+                if (!use_notall) {
+                    runtimerlabel.label = "00:00";
                     stopwindow.present();
+                }
 
                 var delay = delayspin.get_value();
 
@@ -239,15 +244,23 @@ public class MyApplication : Gtk.Application {
                         if(!use_notall)
                             nt.close_last();
                         var res = sc.capture(sources, out filename);
-                        if (res == false) {
-                              if(timerid > 0) {
-                                  Source.remove(timerid);
-                                  timerid = 0;
-                              }
-                              statuslabel.label = "Failed to record";
-                              window.show();
-                        } else {
+                        if (res) {
                             fileentry.text = filename;
+                            if (!use_notall) {
+                                var rt = new Timer();
+                                runtimerid = Timeout.add_seconds(1, () => {
+                                        var secs = (int)rt.elapsed(null);
+                                        runtimerlabel.label = "%02d:%02d".printf(secs / 60, secs % 60);
+                                        return true;
+                                });
+                            }
+                        } else {
+                            if(timerid > 0) {
+                                Source.remove(timerid);
+                                timerid = 0;
+                            }
+                            statuslabel.label = "Failed to record";
+                            window.show();
                         }
                         return Source.REMOVE;
                     });
@@ -406,6 +419,10 @@ public class MyApplication : Gtk.Application {
         if(timerid > 0) {
             Source.remove(timerid);
             timerid = 0;
+        }
+        if(runtimerid > 0) {
+            Source.remove(runtimerid);
+            runtimerid = 0;
         }
         nt.close_last();
 		stopwindow.hide();
