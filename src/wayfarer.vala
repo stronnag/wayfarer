@@ -6,14 +6,7 @@ public class MyApplication : Gtk.Application {
     private ScreenCap sc;
     private uint8 have_area;
     private string filename;
-
-    private string dirname;
-    private string audioid;
-    private int audiorate;
-	private string msel;
-    private bool use_not;
-    private bool use_notall;
-
+    private Conf conf;
     private Notify nt;
     private uint timerid;
     private uint runtimerid;
@@ -26,6 +19,7 @@ public class MyApplication : Gtk.Application {
 	private ComboBoxText mediasel;
 	private Window stopwindow;
     private Gtk.Label runtimerlabel;
+    private Gtk.SpinButton framerate;
 
 	private int fd;
     GenericArray<PortalManager.SourceInfo?> sources;
@@ -46,7 +40,6 @@ public class MyApplication : Gtk.Application {
 
     protected override void activate () {
         fd = -255;
-        audiorate = 48000;
 		if(active_window == null) {
 			present_window();
 		}
@@ -74,7 +67,7 @@ public class MyApplication : Gtk.Application {
         ComboBoxText audiosource = builder.get_object("audiosource") as ComboBoxText;
         CheckButton audiorecord =  builder.get_object("audiorecord") as CheckButton;
         CheckButton mouserecord =  builder.get_object("mouserecord") as CheckButton;
-        SpinButton framerate = builder.get_object("framerate") as SpinButton;
+        framerate = builder.get_object("framerate") as SpinButton;
         SpinButton delayspin = builder.get_object("delay") as SpinButton;
         SpinButton recordtimer = builder.get_object("recordtimer") as SpinButton;
         Gtk.Button areabutton = builder.get_object("areabutton") as Button;
@@ -86,6 +79,8 @@ public class MyApplication : Gtk.Application {
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
+
+        conf = new Conf();
 
         foreach (var e in Encoders.list_profiles()) {
             if (e.is_valid) {
@@ -125,9 +120,9 @@ public class MyApplication : Gtk.Application {
             });
 
         prefapply.clicked.connect(() => {
-                use_not = prefs_not.active;
-                use_notall = prefs_notall.active;
-				audiorate = int.parse(prefs_audiorate.text);
+                conf.notify_start = prefs_not.active;
+                conf.notify_stop = prefs_notall.active;
+				conf.audio_rate = int.parse(prefs_audiorate.text);
                 prefs.hide();
             });
 
@@ -141,13 +136,13 @@ public class MyApplication : Gtk.Application {
 					Gtk.ResponseType.ACCEPT);
 
 				try {
-					fc.set_current_folder(File.new_for_path(dirname));
+					fc.set_current_folder(File.new_for_path(conf.video_dir));
 				} catch {}
 
 				fc.response.connect((result) => {
 						if (result== Gtk.ResponseType.ACCEPT) {
-							dirname = fc.get_file().get_path ();
-							dirlabel.label = Path.get_basename(dirname);
+							conf.video_dir = fc.get_file().get_path ();
+							dirlabel.label = Path.get_basename(conf.video_dir);
 						}
 						fc.close();
 					});
@@ -174,7 +169,8 @@ public class MyApplication : Gtk.Application {
 
         saq = new GLib.SimpleAction("nopersist",null);
         saq.activate.connect(() => {
-				pw.invalidate();
+                conf.restore_token = null;
+				pw.set_token(null);
             });
         window.add_action(saq);
 
@@ -196,34 +192,35 @@ public class MyApplication : Gtk.Application {
         startbutton.clicked.connect(() => {
                 sc.options.capaudio = audiorecord.active;
                 sc.options.capmouse = mouserecord.active;
-                sc.options.framerate = framerate.get_value_as_int();
-                sc.options.audiorate = audiorate;
+                conf.frame_rate = framerate.get_value_as_int();
+                sc.options.framerate = (int)conf.frame_rate;
+                sc.options.audiorate = (int)conf.audio_rate;
                 sc.options.adevice = audiosource.active_id;
 				sc.options.fd = fd;
                 sc.options.mediatype = mediasel.active_id;
                 sc.options.fullscreen = fullscreen.active;
-                sc.options.dirname = dirname;
+                sc.options.dirname = conf.video_dir;
 
                 window.hide();
 
-                if (!use_notall) {
+                if (!conf.notify_stop) {
                     runtimerlabel.label = "00:00";
                     stopwindow.present();
                 }
 
                 var delay = delayspin.get_value();
 
-                if(use_not || use_notall) {
+                if(conf.notify_start || conf.notify_stop) {
                     if(delay < 2) {
-                        nt.send_notification("Ready to record", "Click me to stop", (use_notall) ? 0 :1000);
+                        nt.send_notification("Ready to record", "Click me to stop", (conf.notify_stop) ? 0 :1000);
                     } else {
                         var ctr = (int)(delay);
                         var str = "Starting in %ds\n".printf(ctr);
-                        nt.send_notification("Ready to record", str, (use_notall)? 0 :1000);
+                        nt.send_notification("Ready to record", str, (conf.notify_stop)? 0 :1000);
                         ctr--;
                         Timeout.add_seconds(1, () => {
                                 str = "Starting in %ds\n".printf(ctr);
-                                nt.send_notification("Ready to record", (ctr>1) ? str : "Close me to stop", (use_notall)? 0 :1000);
+                                nt.send_notification("Ready to record", (ctr>1) ? str : "Close me to stop", (conf.notify_stop)? 0 :1000);
                                 ctr--;
                                 if(ctr <= 0)
                                     return Source.REMOVE;
@@ -241,12 +238,12 @@ public class MyApplication : Gtk.Application {
                                     return Source.REMOVE;
                                 });
                         }
-                        if(!use_notall)
+                        if(!conf.notify_stop)
                             nt.close_last();
                         var res = sc.capture(sources, out filename);
                         if (res) {
                             fileentry.text = filename;
-                            if (!use_notall) {
+                            if (!conf.notify_stop) {
                                 var rt = new Timer();
                                 runtimerid = Timeout.add_seconds(1, () => {
                                         var secs = (int)rt.elapsed(null);
@@ -271,7 +268,7 @@ public class MyApplication : Gtk.Application {
 				statuslabel.label = s;
 			});
 
-        var at = sc.get_sources();
+        var at = sc.get_audio_sources();
         foreach (var a in at) {
             audiosource.append(a.device,a.desc);
         }
@@ -287,76 +284,73 @@ public class MyApplication : Gtk.Application {
                 return Source.CONTINUE;
             });
 
-		use_notall = true;
-		mediasel.active_id = "webm";  // "simple, fast"
+        pw = new PortalManager(conf.restore_token);
 
-        pw = new PortalManager(null);
-        read_config();
+		prefs_audiorate.text = conf.audio_rate.to_string();
 
-		prefs_audiorate.text = audiorate.to_string();
+        framerate.set_value(conf.frame_rate);
+        framerate.value_changed.connect(() => {
+                conf.frame_rate = (uint32)framerate.value;
+            });
 
-		if (msel != null) {
-			mediasel.active_id = msel;
+		if (conf.media_type != null) {
+			mediasel.active_id = conf.media_type;
 		}
 
-		if(dirname != null) {
-			dirlabel.label = Path.get_basename(dirname);
+		if(conf.video_dir != null) {
+			dirlabel.label = Path.get_basename(conf.video_dir);
 		}
 
 		if(filename != null)
             fileentry.text = filename;
 
-		if(audioid != null && audioid.length > 4) {
-			audiosource.active_id = audioid;
+		if(conf.audio_device != null && conf.audio_device.length > 4) {
+			audiosource.active_id = conf.audio_device;
 		} else {
 			audiosource.active = 0;
 		}
-        prefs_not.active = use_not;
-        prefs_notall.active = use_notall;
+        prefs_not.active = conf.notify_start;
+        prefs_notall.active = conf.notify_stop;
 
         audiosource.changed.connect(() => {
-                audioid = audiosource.active_id;
+                conf.audio_device = audiosource.active_id;
             });
 
         sources = new GenericArray<PortalManager.SourceInfo?>();
 
         bool is_x11 = (Environment.get_variable("XDG_SESSION_TYPE") == "x11");
 
-        pw.complete.connect((_fd) => {
-                fd = _fd;
-                if (sources.length > 1) {
-                    sources.sort((a,b) => {
-                            return (int)(a.x > b.x) - (int)(a.x < b.x);
-                        });
-                }
-                if (fd > -1  && sources.length > 0 ) {
-                    if (sources[0].source_type == 1 || sources[0].source_type == 0) {
-                        run_area_selection();
-                    } else {
-                        have_area = 2;
-                        update_status_label();
+        pw.finished.connect((b) => {
+                if(b) {
+                    var ci = pw.get_cast_info();
+                    if (ci.fd > -1  && ci.sources.length > 0 ) {
+                        fd = ci.fd;
+                        sources = ci.sources;
+                        if (sources[0].source_type == 1 || sources[0].source_type == 0) {
+                            run_area_selection();
+                        } else {
+                            have_area = 2;
+                            update_status_label();
+                        }
+                    } else if (fd == -1) {
+                        if (is_x11) {
+                            run_area_selection();
+                        } else {
+                            statuslabel.label = "Failed run XDG Portal";
+                        }
                     }
-                } else if (fd == -1) {
-                    if (is_x11) {
-                        run_area_selection();
-                    } else {
-                        statuslabel.label = "Failed run XDG Portal";
-                    }
+                    startbutton.sensitive = validate_start();
                 }
-                startbutton.sensitive = validate_start();
-            });
-        pw.source_info.connect((s) => {
-                sources.add(s);
             });
 
         areabutton.clicked.connect(() => {
                 sources.remove_range(0,sources.length);
-                pw.run(mouserecord.active);
+                pw.acquire(mouserecord.active);
             });
 
         nt = new Notify();
         nt.on_action(() => {
-                if(use_notall)
+                if(conf.notify_stop)
                     do_stop_action();
             });
         window.show ();
@@ -434,104 +428,19 @@ public class MyApplication : Gtk.Application {
 		stopwindow.hide();
         window.show();
         sc.post_process();
+        pw.close();
     }
-
-    private string? get_config_file()
-    {
-        string fn = null;
-        var uc = Environment.get_user_config_dir();
-        if(uc != null) {
-            fn = Path.build_filename(uc, "wayfarer", "cap.conf");
-        }
-
-        var file = File.new_for_path(fn);
-        var f = file.get_parent();
-        if(f.query_exists() == false)
-        {
-            try {
-                f.make_directory_with_parents();
-            } catch {};
-        }
-        return fn;
-    }
-
 
     private void clean_up() {
-		msel = mediasel.active_id;
+		conf.media_type = mediasel.active_id;
         save_config();
         quit();
     }
 
     private void save_config() {
-        var fn = get_config_file();
-        if (fn != null) {
-            var fp = FileStream.open(fn, "w");
-            if(fp != null) {
-                if (dirname != "")
-                    fp.printf("dir = %s\n", dirname);
-                if (audiorate != 0)
-                    fp.printf("audiorate = %d\n", audiorate);
-                if (audioid != "")
-                    fp.printf("audioid = %s\n", audioid);
-				fp.printf("use_not = %s\n", use_not.to_string());
-				fp.printf("use_notall = %s\n", use_notall.to_string());
-				fp.printf("media_type = %s\n", msel);
-                var t = pw.get_token();
-                if (t != null) {
-                    fp.printf("token = %s\n", t);
-                }
-			}
-        }
-    }
-
-    private void read_config() {
-        var fn = get_config_file();
-        if (fn != null) {
-            var fp = FileStream.open(fn, "r");
-            if(fp != null) {
-                string line;
-                while ((line = fp.read_line ()) != null) {
-                    if(line.strip().length > 0 &&
-                       !line.has_prefix("#") &&
-                       !line.has_prefix(";")) {
-                        var parts = line.split("=");
-                        if(parts.length == 2) {
-                            var p0 = parts[0].strip();
-                            var p1 = parts[1].strip();
-                            switch (p0) {
-							case "dir":
-								dirname = p1;
-								break;
-							case "audioid":
-								audioid = p1;
-								break;
-							case "audiorate":
-								audiorate = int.parse(p1);
-                                if (audiorate == 0) {
-                                    audiorate = 48000;
-                                }
-								break;
-							case "use_not":
-								use_not = (p1 == "true");
-								break;
-							case "use_notall":
-								use_notall = (p1 == "true");
-								break;
-							case "media_type":
-								msel = p1;
-								break;
-							case "token":
-                                pw.set_token(p1);
-								break;
-
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (dirname == null)
-            dirname = "/tmp";
+        conf.frame_rate = framerate.get_value_as_int();
+        conf.restore_token = pw.get_token();
+        GLib.Settings.sync();
     }
 
     public static int main (string[] args) {

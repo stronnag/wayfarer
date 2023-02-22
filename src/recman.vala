@@ -56,7 +56,7 @@ public class ScreenCap : Object {
         return ok;
     }
 
-    public AudioSource [] get_sources() {
+    public AudioSource [] get_audio_sources() {
         AudioSource []at = {};
         try {
             string[] spawn_args = {"pactl", "list", "sources"};

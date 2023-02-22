@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema path="/org/stronnag/wayfarer/" id="org.stronnag.wayfarer">
+    <key name="video-dir" type="s">
+      <default>'/tmp'</default>
+      <summary>Default output directory</summary>
+    </key>
+
+    <key name="audio-rate" type="u">
+      <default>48000</default>
+      <summary>Audiorate (bit/s)</summary>
+    </key>
+
+    <key name="frame-rate" type="u">
+      <default>30</default>
+      <summary>Video frame (fps)</summary>
+    </key>
+
+    <key name="audio-device" type="s">
+      <default>'default'</default>
+      <summary>Audio device</summary>
+    </key>
+
+    <key name="media-type" type="s">
+      <default>'matroska'</default>
+      <summary>Default media type</summary>
+    </key>
+
+    <key name="restore-token" type="s">
+      <default>''</default>
+      <summary>Screencast portal token</summary>
+    </key>
+
+    <key name="notify-start" type="b">
+      <default>false</default>
+      <summary>Use notifications for start recording</summary>
+    </key>
+
+    <key name="notify-stop" type="b">
+      <default>false</default>
+      <summary>Use notifications to stop recording</summary>
+    </key>
+  </schema>
+</schemalist>

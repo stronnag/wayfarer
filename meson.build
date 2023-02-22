@@ -1,4 +1,4 @@
-project('wayfarer', 'vala', 'c', version : '0.7.0')
+project('wayfarer', 'vala', 'c', version : '1.0.0')
 
 conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
@@ -26,7 +26,6 @@ executable(
     dependencies: [
         dependency('gtk4'),
 	dependency('gio-2.0'),
-	dependency('libportal'),
         dependency('gstreamer-1.0'),
         dependency('gstreamer-pbutils-1.0'),
 	deps,
@@ -34,6 +33,16 @@ executable(
 	],
     include_directories : configuration_inc,
     install: true,
+)
+
+executable(
+  'wayfarer-convert-to-schema',
+  convsrc,
+  dependencies: [
+	dependency('gio-2.0'),
+        meson.get_compiler('vala').find_library('posix'),
+	],
+    install: false,
 )
 
 gnome.post_install(
