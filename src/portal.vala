@@ -61,11 +61,12 @@ public class PortalManager : Object {
     public signal void completed(Result p);
 
     public PortalManager(string? rtoken) {
-        if (Uuid.string_is_valid(rtoken)) {
-            restore_token = rtoken;
-        } else {
-            restore_token = null;
+        if (rtoken != null) {
+            if (!Uuid.string_is_valid(rtoken)) {
+                rtoken = null;
+            }
         }
+        restore_token = rtoken;
         tcount = 0;
         capcursor = true;
         sources={};

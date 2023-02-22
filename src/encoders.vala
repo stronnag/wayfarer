@@ -55,7 +55,7 @@ class Encoders {
                   {"cpu-used", 16},
                   {"cq-level", 13},
                   {"deadline", 1},
-                  {"static-threshold", 100},
+                  {"static-threshold", 1000},
                   {"keyframe-mode", "disabled"},
                   {"buffer-size", 20000},
                   {"threads", preferred_threads()}},
