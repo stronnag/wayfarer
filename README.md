@@ -16,10 +16,11 @@ Requires:
 * GTK 4
 * Vala
 * Gstreamer 1.0
-* XDG Portal
-* (optional, can be installed locally by the build system), Blueprint (GTK Builder compiler).
+* (optional, otherwise installed locally by the build system), Blueprint (GTK Builder compiler).
 
-There is also a  GTK3 branch
+* XDG Portal (at run time)
+
+There is also an obsolete  GTK3 branch
 
 * GTK 3
 * Vala
@@ -28,31 +29,20 @@ There is also a  GTK3 branch
 * XDG Portal
 
 
-**wayfarer** supports MKV, MP4 and WebM video container (vp8, mp4) and Opus as the audio format.
+**wayfarer** supports MKV, MP4 and WebM video container (vp8, vp9, mp4) with Opus or MP3 as the audio format. The available video codecs presented in the UI are those available on your system. Where VAAPI versions are available, they will also be offered.
 
-wayfarer uses the XDG Portal on modern GNOME desktops, with all the pain and diminished functionality that the portal implies.
+wayfarer uses the XDG Portal on modern desktops, with all the pain and diminished functionality that the portal implies.
 
 * Portal connection is set to persist, pressing Control-P clears the persistent state, re-enabling the portal monitor selection screen.
 * Selection across multiple monitors and full screen across multiple monitors is available
-* Window selection is not supported, as the libportal support is not useful.
+* Window selection is not supported, as the portal support is not helpful.
 
 ## Building
-
-### GTK3 extra dependency
-
-Appindicator is a build time GTK3 (only) dependency; at runtime, if you have an appindicator Gnome Shell extension installed, you can use the indicator to stop recording; without such an indicator, you can use Notification, with a less good user experience.
-
-* For Arch Linux, install `libappindicator-gtk3`.
-* On Debian / Ubuntu et al the app indicator package is called `libayatana-appindicator3-dev` and you also need `gir1.2-ayatanaappindicator3-0.1`.
-* For Fedora, try `libappindicator-gtk3-devel`
-
-For GTK4, a small "Stop Recording" window is displayed instead.
 
 ### General
 
 Other requirements:
 
-* `libportal`
 * Desktop specific visual portal selector (e.g. `xdg-desktop-portal-gnome`.
 
 The build system is meson / ninja, e.g.
@@ -63,6 +53,16 @@ meson setup build --buildtype=release --prefix=~/.local
 # then
 ninja install -C build
 ```
+
+#### GTK3 extra dependency
+
+Appindicator is a build time GTK3 (only) dependency; at runtime, if you have an appindicator Gnome Shell extension installed, you can use the indicator to stop recording; without such an indicator, you can use Notification, with a less good user experience.
+
+* For Arch Linux, install `libappindicator-gtk3`.
+* On Debian / Ubuntu et al the app indicator package is called `libayatana-appindicator3-dev` and you also need `gir1.2-ayatanaappindicator3-0.1`.
+* For Fedora, try `libappindicator-gtk3-devel`
+
+For GTK4, a small "Stop Recording" window is displayed instead.
 
 ## User Interface
 
@@ -94,12 +94,11 @@ The menu button at the right of the header bar offers three options:
 * Use Notifications for ready : if set, a notification count down is shown for delays > 2 seconds.
 * Use notifications (vice App Indicator). Provides a persistent Notification to stop recordings; mainly needed if you don't have an AppIndicator tray shell extension (on GTK3).
 
-Preferences are stored as a simple `key = value` text file in `~/.config/wayfarer/cap.conf`.
-
+Preferences are stored as `GSettings` under the schema `org.stronnag.wayfarer`. In earlier versions  a simple `key = value` text file in `~/.config/wayfarer/cap.conf` was used. The `cap.conf` file may be converted to `GSettings` by the conversion tool `wayfarer-convert-to-schema`. This tool is not installed, but is built by default and may be found in the `build` directory.
 
 ## Miscellaneous
 
 Licence : GPL v3 or later
 (c) Jonathan Hudson 2021-2023
 
-Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the other developer's pain with the ever moving targets of Gnome, Wayland, Pipewire and XDG Portal, in particularly `kooha`'s guidance on the workings of GStreamer.
+Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the other developer's pain with the ever moving targets of Gnome, Wayland, Pipewire and XDG Portal, particularly `kooha`'s guidance on the workings of GStreamer has been extremely useful.
