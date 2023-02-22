@@ -1,5 +1,6 @@
 
 public class PortalManager : Object {
+
     private enum XdpCursorMode {
         HIDDEN = (1 << 0),
         EMBEDDED = (1 << 1),
@@ -23,15 +24,26 @@ public class PortalManager : Object {
         PERSISTENT,
     }
 
+
+    public enum Result  {
+        OK,
+        SESSIONFAIL,
+        SOURCESFAIL,
+        STARTFAIL,
+        PROXYFAIL,
+        REQUESTFAIL,
+        CASTFAIL,
+    }
+
     public struct SourceInfo {
-                int width;
-                int height;
-                int x;
-                int y;
-                uint32 source_type;
-                uint32 node_id;
-                string id;
-        }
+        int width;
+        int height;
+        int x;
+        int y;
+        uint32 source_type;
+        uint32 node_id;
+        string id;
+    }
 
     public struct CastInfo {
         int fd;
@@ -46,7 +58,7 @@ public class PortalManager : Object {
     private int fd;
     private bool capcursor;
 
-    public signal void finished(bool ok);
+    public signal void completed(Result p);
 
     public PortalManager(string? rtoken) {
         if (Uuid.string_is_valid(rtoken)) {
@@ -85,10 +97,6 @@ public class PortalManager : Object {
         return CastInfo(){fd = fd, sources = sarry};
     }
 
-    private void completed(bool ok) {
-        finished(ok);
-    }
-
     public void close() {
         try {
             var bus =  proxy.get_connection();
@@ -125,7 +133,7 @@ public class PortalManager : Object {
                 select_sources_request();
             }
         } else {
-            completed(false);
+            completed(Result.SESSIONFAIL);
         }
     }
 
@@ -137,7 +145,7 @@ public class PortalManager : Object {
             start_request();
         } else {
             stderr.printf("Get sources cancelled\n");
-            completed(false);
+            completed(Result.SOURCESFAIL);
         }
     }
 
@@ -168,7 +176,7 @@ public class PortalManager : Object {
             open_pw_remote_request();
         } else {
             stderr.printf("Start cancelled\n");
-            completed(false);
+            completed(Result.STARTFAIL);
         }
     }
 
@@ -184,6 +192,7 @@ public class PortalManager : Object {
             create_session_request();
         } catch (Error e) {
             stderr.printf("Start session proxy error %s\n", e.message);
+            completed(Result.PROXYFAIL);
         }
     }
 
@@ -242,7 +251,7 @@ public class PortalManager : Object {
         } catch (Error e) {
             stderr.printf("Remote fd failed %s\n", e.message);
         }
-        completed(true);
+        completed(Result.OK);
     }
 
     private void screencast_request(string handle_token, string name, Variant session_options,
@@ -263,6 +272,8 @@ public class PortalManager : Object {
                                                        "org.freedesktop.portal.Request");
         } catch (Error e) {
             stderr.printf("Request proxy error %s\n", e.message);
+            completed(Result.REQUESTFAIL);
+            return;
         }
 
         bus.signal_subscribe(
@@ -279,6 +290,7 @@ public class PortalManager : Object {
                     proxy.call.end(res);
                 } catch (Error e) {
                     stderr.printf("Session failed [%s]\n", e.message);
+                    completed(Result.CASTFAIL);
                 }
             });
     }
@@ -288,8 +300,8 @@ public static int main(string?[] args) {
     var rtoken = (args.length > 1) ? args[1] : null;
     var loop = new MainLoop();
     var a = new PortalManager(rtoken);
-    a.finished.connect((b) => {
-            if (b) {
+    a.finished.connect((reult) => {
+            if (result == Portal.Result.OK) {
                 var ci = a.get_cast_info();
                 print("Fd = %d\n", ci.fd);
                 ci.sources.foreach((s) => {
@@ -297,6 +309,8 @@ public static int main(string?[] args) {
                               s.node_id, s.width, s.height,s.x,s.y,s.source_type, s.id);
                     });
                 print("Restore token = %s\n", a.get_token());
+            } else {
+                print("Portal Fail %s\n", result.to_string());
             }
             loop.quit();
         });

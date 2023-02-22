@@ -320,8 +320,8 @@ public class MyApplication : Gtk.Application {
 
         bool is_x11 = (Environment.get_variable("XDG_SESSION_TYPE") == "x11");
 
-        pw.finished.connect((b) => {
-                if(b) {
+        pw.completed.connect((result) => {
+                if(result == PortalManager.Result.OK) {
                     var ci = pw.get_cast_info();
                     if (ci.fd > -1  && ci.sources.length > 0 ) {
                         fd = ci.fd;
@@ -332,15 +332,14 @@ public class MyApplication : Gtk.Application {
                             have_area = 2;
                             update_status_label();
                         }
-                    } else if (fd == -1) {
-                        if (is_x11) {
-                            run_area_selection();
-                        } else {
-                            statuslabel.label = "Failed run XDG Portal";
-                        }
                     }
-                    startbutton.sensitive = validate_start();
+                } else if (is_x11) {
+                    run_area_selection();
+                } else {
+                    statuslabel.label = "Portal cancelled or failed";
+                    stderr.printf("Portal Result: %s\n", result.to_string());
                 }
+                startbutton.sensitive = validate_start();
             });
 
         areabutton.clicked.connect(() => {
