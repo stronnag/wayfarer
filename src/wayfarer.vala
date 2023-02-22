@@ -39,7 +39,7 @@ public class MyApplication : Gtk.Application {
     }
 
     protected override void activate () {
-        fd = -255;
+        fd = -1;
 		if(active_window == null) {
 			present_window();
 		}
