@@ -57,6 +57,43 @@ public class ScreenCap : Object {
         return ok;
     }
 
+#if USE_GSTDEV
+    public AudioSource [] get_audio_sources() {
+        AudioSource []at = {};
+        var monitor = new Gst.DeviceMonitor ();
+        var caps = new Gst.Caps.empty_simple ("audio/x-raw");
+        monitor.add_filter ("Audio/Source", caps);
+        var devs = monitor.get_devices();
+        devs.foreach((d) => {
+                var props = d.properties;
+                if (props != null) {
+                    var dc = props.get_string("device.class");
+                    if (dc != null) {
+                        var nn = props.get_string("node.name");
+                        if (nn != null) {
+                            if(dc == "monitor") {
+                                nn = nn + ".monitor";
+                            }
+                            bool add=true;
+                            foreach(var as in at) {
+                                if (as.device == nn) {
+                                    add = false;
+                                    break;
+                                }
+                            }
+                            if (add) {
+                                AudioSource a = AudioSource(){desc=d.display_name, device=nn};
+                                at += a;
+                            }
+                        }
+                    }
+                }
+            });
+        return at;
+    }
+#endif
+
+#if USE_PACTL_DEV
     public AudioSource [] get_audio_sources() {
         AudioSource []at = {};
         try {
@@ -105,6 +142,62 @@ public class ScreenCap : Object {
             Process.close_pid (child_pid);
         } catch (SpawnError e) {
             print(e.message);
+        }
+        return at;
+    }
+#endif
+
+    public AudioSource [] get_audio_sources() {
+        AudioSource []at = {};
+        var ml = new PulseAudio.GLibMainLoop( null);
+        var api = ml.get_api();
+        var ctx = new PulseAudio.Context(api, "wayfarer", null);
+        ctx.connect(null,0, null);
+        PulseAudio.Context.State pastate = 0;
+        int state = 0;
+        ctx.set_state_callback((c) => {
+                pastate = c.get_state();
+                switch (pastate) {
+                case PulseAudio.Context.State.READY:
+                    state = 1;
+                    break;
+                case PulseAudio.Context.State.FAILED:
+                case PulseAudio.Context.State.TERMINATED:
+                    state = -1;
+                    break;
+                default:
+                    state = 0;
+                    break;
+                }
+            });
+        var mlc = MainContext.@default();
+        PulseAudio.Operation? op = null;
+        while (true) {
+            while(state == 0) {
+                mlc.iteration(true);
+                continue;
+            }
+            if (state == -1) {
+                break;
+            }
+            if (state == 1) {
+                op = ctx.get_source_info_list ((c, l, eol) => {
+                        if (eol > 0) {
+                            state = 3;
+                        } else {
+                            AudioSource a = AudioSource(){device=l.name, desc=l.description};
+                            at += a;
+                        }
+                    });
+                state = 2;
+            }
+            if(state == 3) {
+                if (op.get_state() ==  PulseAudio.Operation.State.DONE) {
+                    ctx.disconnect();
+                    break;
+                }
+            }
+            mlc.iteration(true);
         }
         return at;
     }

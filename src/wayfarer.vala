@@ -47,7 +47,7 @@ public class MyApplication : Gtk.Application {
 	}
 
     private void present_window() {
-        pwresult = PortalManager.Result.UNKNOWN;
+        bool validaudio = false;
         var builder = new Builder.from_resource("/org/stronnag/wayfarer/wayfarer.ui");
         window = builder.get_object ("window") as Gtk.ApplicationWindow;
         this.add_window (window);
@@ -81,6 +81,8 @@ public class MyApplication : Gtk.Application {
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
+
+        pwresult = PortalManager.Result.UNKNOWN;
 
         conf = new Conf();
 
@@ -193,7 +195,7 @@ public class MyApplication : Gtk.Application {
         sc = new ScreenCap();
 
         startbutton.clicked.connect(() => {
-                sc.options.capaudio = audiorecord.active;
+                sc.options.capaudio = (validaudio)  ? audiorecord.active : false;
                 sc.options.capmouse = mouserecord.active;
                 conf.frame_rate = framerate.get_value_as_int();
                 sc.options.framerate = (int)conf.frame_rate;
@@ -278,11 +280,24 @@ public class MyApplication : Gtk.Application {
 
         if(at.length == 0) {
             stderr.puts("No audio sources found\n");
-            quit();
 			audiorecord.active = false;
         }
 
-		Unix.signal_add(Posix.Signal.USR1, () => {
+		if(conf.audio_device.length > 4) {
+            foreach(var a in at) {
+                if (a.device == conf.audio_device) {
+                    audiosource.active_id = conf.audio_device;
+                    validaudio = true;
+                    break;
+                }
+            }
+        }
+
+        if(!validaudio) {
+			audiosource.active = 0;
+		}
+
+        Unix.signal_add(Posix.Signal.USR1, () => {
                 do_stop_action();
                 return Source.CONTINUE;
             });
@@ -307,11 +322,6 @@ public class MyApplication : Gtk.Application {
 		if(filename != null)
             fileentry.text = filename;
 
-		if(conf.audio_device != null && conf.audio_device.length > 4) {
-			audiosource.active_id = conf.audio_device;
-		} else {
-			audiosource.active = 0;
-		}
         prefs_not.active = conf.notify_start;
         prefs_notall.active = conf.notify_stop;
 

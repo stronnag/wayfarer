@@ -28,6 +28,7 @@ executable(
 	dependency('gio-2.0'),
         dependency('gstreamer-1.0'),
         dependency('gstreamer-pbutils-1.0'),
+	dependency('libpulse-mainloop-glib'),
 	deps,
         meson.get_compiler('vala').find_library('posix'),
 	],
