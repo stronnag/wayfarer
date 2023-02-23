@@ -20,6 +20,7 @@ public class MyApplication : Gtk.Application {
 	private Window stopwindow;
     private Gtk.Label runtimerlabel;
     private Gtk.SpinButton framerate;
+    private PortalManager.Result pwresult;
 
 	private int fd;
     GenericArray<PortalManager.SourceInfo?> sources;
@@ -46,6 +47,7 @@ public class MyApplication : Gtk.Application {
 	}
 
     private void present_window() {
+        pwresult = PortalManager.Result.UNKNOWN;
         var builder = new Builder.from_resource("/org/stronnag/wayfarer/wayfarer.ui");
         window = builder.get_object ("window") as Gtk.ApplicationWindow;
         this.add_window (window);
@@ -169,12 +171,13 @@ public class MyApplication : Gtk.Application {
 
         saq = new GLib.SimpleAction("nopersist",null);
         saq.activate.connect(() => {
-                conf.restore_token = null;
+                stderr.printf("Clearing token\n");
+                conf.restore_token = "";
 				pw.set_token(null);
             });
         window.add_action(saq);
 
-		set_accels_for_action ("win.nopersist", {"<Ctrl><Shift>p"});
+		set_accels_for_action ("win.nopersist", {"<Ctrl>z"});
 		set_accels_for_action ("win.quit", {"<Ctrl>q"});
 		set_accels_for_action ("win.about", { "F1" });
 		set_accels_for_action ("win.prefs", {"<Ctrl>p"});
@@ -284,18 +287,18 @@ public class MyApplication : Gtk.Application {
                 return Source.CONTINUE;
             });
 
-        pw = new PortalManager(conf.restore_token);
-
-		prefs_audiorate.text = conf.audio_rate.to_string();
+        prefs_audiorate.text = conf.audio_rate.to_string();
 
         framerate.set_value(conf.frame_rate);
         framerate.value_changed.connect(() => {
                 conf.frame_rate = (uint32)framerate.value;
             });
 
-		if (conf.media_type != null) {
+        if (conf.media_type != null && conf.media_type.length != 0) {
 			mediasel.active_id = conf.media_type;
-		}
+		} else {
+            mediasel.active_id = "webm";
+        }
 
 		if(conf.video_dir != null) {
 			dirlabel.label = Path.get_basename(conf.video_dir);
@@ -320,7 +323,19 @@ public class MyApplication : Gtk.Application {
 
         bool is_x11 = (Environment.get_variable("XDG_SESSION_TYPE") == "x11");
 
+        pw = new PortalManager(conf.restore_token);
+
+        pw.closed.connect(() => {
+                stderr.printf("Portal closed remotely\n");
+                if(fd > 0) {
+                    Posix.close(fd);
+                    fd = -1;
+                    do_stop_action(true);
+                }
+            });
+
         pw.completed.connect((result) => {
+                pwresult = result;
                 if(result == PortalManager.Result.OK) {
                     var ci = pw.get_cast_info();
                     if (ci.fd > -1  && ci.sources.length > 0 ) {
@@ -344,7 +359,11 @@ public class MyApplication : Gtk.Application {
 
         areabutton.clicked.connect(() => {
                 sources.remove_range(0,sources.length);
-                pw.acquire(mouserecord.active);
+                if (pwresult == PortalManager.Result.OK || pwresult == PortalManager.Result.UNKNOWN) {
+                    pw.acquire(mouserecord.active);
+                } else if (is_x11) {
+                    run_area_selection();
+                }
             });
 
         nt = new Notify();
@@ -414,7 +433,7 @@ public class MyApplication : Gtk.Application {
 		startbutton.sensitive = validate_start();
     }
 
-    private void do_stop_action() {
+    private void do_stop_action(bool forced = false) {
         if(timerid > 0) {
             Source.remove(timerid);
             timerid = 0;
@@ -426,8 +445,14 @@ public class MyApplication : Gtk.Application {
         nt.close_last();
 		stopwindow.hide();
         window.show();
-        sc.post_process();
-        pw.close();
+        sc.post_process(forced);
+        if (forced) {
+            startbutton.sensitive = false;
+        } else {
+            if (pwresult == PortalManager.Result.OK) {
+                pw.close();
+            }
+        }
     }
 
     private void clean_up() {
@@ -438,7 +463,11 @@ public class MyApplication : Gtk.Application {
 
     private void save_config() {
         conf.frame_rate = framerate.get_value_as_int();
-        conf.restore_token = pw.get_token();
+        var t = pw.get_token();
+        if (t == null) {
+            t = "";
+        }
+        conf.restore_token = t;
         GLib.Settings.sync();
     }
 

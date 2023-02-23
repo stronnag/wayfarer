@@ -13,16 +13,16 @@ In X11 mode, it may support other desktops (untested); in Wayland mode, other de
 
 Requires:
 
-* GTK 4
+* Gtk 4
 * Vala
 * Gstreamer 1.0
-* (optional, otherwise installed locally by the build system), Blueprint (GTK Builder compiler).
+* (optional, otherwise installed locally by the build system), Blueprint (Gtk Builder compiler).
 
 * XDG Portal (at run time)
 
-There is also an obsolete  GTK3 branch
+There is also an obsolete  Gtk3 branch
 
-* GTK 3
+* Gtk 3
 * Vala
 * Gstreamer 1.0
 * AppIndicator
@@ -33,7 +33,7 @@ There is also an obsolete  GTK3 branch
 
 wayfarer uses the XDG Portal on modern desktops, with all the pain and diminished functionality that the portal implies.
 
-* Portal connection is set to persist, pressing Control-P clears the persistent state, re-enabling the portal monitor selection screen.
+* Portal connection is set to persist, pressing Control-Z clears the persistent state, re-enabling the portal monitor selection screen.
 * Selection across multiple monitors and full screen across multiple monitors is available
 * Window selection is not supported, as the portal support is not helpful.
 
@@ -54,15 +54,15 @@ meson setup build --buildtype=release --prefix=~/.local
 ninja install -C build
 ```
 
-#### GTK3 extra dependency
+#### Gtk3 extra dependency
 
-Appindicator is a build time GTK3 (only) dependency; at runtime, if you have an appindicator Gnome Shell extension installed, you can use the indicator to stop recording; without such an indicator, you can use Notification, with a less good user experience.
+Appindicator is a build time Gtk3 (only) dependency; at runtime, if you have an appindicator Gnome Shell extension installed, you can use the indicator to stop recording; without such an indicator, you can use Notification, with a less good user experience.
 
 * For Arch Linux, install `libappindicator-gtk3`.
 * On Debian / Ubuntu et al the app indicator package is called `libayatana-appindicator3-dev` and you also need `gir1.2-ayatanaappindicator3-0.1`.
 * For Fedora, try `libappindicator-gtk3-devel`
 
-For GTK4, a small "Stop Recording" window is displayed instead.
+For Gtk4, a small "Stop Recording" window is displayed instead.
 
 ## User Interface
 
@@ -77,8 +77,9 @@ For GTK4, a small "Stop Recording" window is displayed instead.
 Once recording is started:
 
 * If `Timer` is set, the recording will run for the set number of seconds
-* GTK3: If an AppIndicator tray is used, there will be an icon in the system tray, clicking this provides a "Stop Recording" button.
-* GTK4: A small window provides a "Stop Recording" button.
+* Gtk3: If an AppIndicator tray is used, there will be an icon in the system tray, clicking this provides a "Stop Recording" button.
+* Gtk4: A small window provides a "Stop Recording" button.
+* Gtk4/GnomeShell: The recording can be stopped from the panel Portal indicator.
 * Otherwise, use the "Preferences" menu and set `Use notifications (vice App Indicator)`. Clicking on the notification will stop the recording.
 
 The menu button at the right of the header bar offers three options:
@@ -92,7 +93,7 @@ The menu button at the right of the header bar offers three options:
 ![Main Window](data/assets/wayfarer-prefs.png)
 
 * Use Notifications for ready : if set, a notification count down is shown for delays > 2 seconds.
-* Use notifications (vice App Indicator). Provides a persistent Notification to stop recordings; mainly needed if you don't have an AppIndicator tray shell extension (on GTK3).
+* Use notifications (vice App Indicator). Provides a persistent Notification to stop recordings; mainly needed if you don't have an AppIndicator tray shell extension (on Gtk3).
 
 Preferences are stored as `GSettings` under the schema `org.stronnag.wayfarer`. In earlier versions  a simple `key = value` text file in `~/.config/wayfarer/cap.conf` was used. The `cap.conf` file may be converted to `GSettings` by the conversion tool `wayfarer-convert-to-schema`. This tool is not installed, but is built by default and may be found in the `build` directory.
 

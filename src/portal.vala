@@ -33,6 +33,7 @@ public class PortalManager : Object {
         PROXYFAIL,
         REQUESTFAIL,
         CASTFAIL,
+        UNKNOWN,
     }
 
     public struct SourceInfo {
@@ -51,6 +52,7 @@ public class PortalManager : Object {
     }
 
     private DBusProxy proxy;
+    private DBusProxy session_proxy;
     private int tcount;
     private string? restore_token;
     private string? session_handle;
@@ -59,6 +61,7 @@ public class PortalManager : Object {
     private bool capcursor;
 
     public signal void completed(Result p);
+    public signal void closed();
 
     public PortalManager(string? rtoken) {
         if (rtoken != null) {
@@ -67,7 +70,6 @@ public class PortalManager : Object {
             }
         }
         restore_token = rtoken;
-        tcount = 0;
         capcursor = true;
         sources={};
         fd = -1;
@@ -109,6 +111,7 @@ public class PortalManager : Object {
                 null, null,
                 DBusCallFlags.NONE,
                 -1);
+            stderr.printf("SESSION Closed OK\n");
         } catch (Error e) {
             stderr.printf("Close failed %s\n", e.message);
         }
@@ -122,6 +125,26 @@ public class PortalManager : Object {
         return (int)u;
     }
 
+    // So we can get close notifications
+    private void create_session_proxy() {
+        try {
+            session_proxy = new DBusProxy.for_bus_sync(BusType.SESSION,
+                                                       DBusProxyFlags.NONE,
+                                                       null,
+                                                       "org.freedesktop.portal.Desktop",
+                                                       session_handle,
+                                                       "org.freedesktop.portal.Session");
+
+            session_proxy.g_signal.connect((sender, signame, v) => {
+                    if (signame == "Closed") {
+                        closed();
+                    }
+                });
+        } catch {
+            print("Failed to connect to session i/f\n");
+        }
+    }
+
     private void on_session_cb (DBusConnection conn, string? sender, string objpath,
                                string ifname, string signame, Variant params) {
 
@@ -131,6 +154,7 @@ public class PortalManager : Object {
             var v = ht.lookup_value("session_handle", null);
             if (v != null) {
                 session_handle = v.get_string();
+                create_session_proxy();
                 select_sources_request();
             }
         } else {
@@ -183,6 +207,8 @@ public class PortalManager : Object {
 
     public void acquire(bool _capcursor) {
         capcursor = _capcursor;
+        sources={};
+        fd = -1;
         try {
             proxy = new DBusProxy.for_bus_sync(BusType.SESSION,
                                                DBusProxyFlags.NONE,
@@ -198,8 +224,8 @@ public class PortalManager : Object {
     }
 
     private void create_session_request() {
-        var session_token = make_token();
         var handle_token = make_token();
+        var session_token = handle_token;
         var vd = new VariantDict(null);
         vd.insert("handle_token", "s", (handle_token));
         vd.insert("session_handle_token", "s", session_token);
@@ -301,9 +327,24 @@ public static int main(string?[] args) {
     var rtoken = (args.length > 1) ? args[1] : null;
     var loop = new MainLoop();
     var a = new PortalManager(rtoken);
-    a.finished.connect((reult) => {
-            if (result == Portal.Result.OK) {
+
+    int fd = -1;
+
+    a.closed.connect(() => {
+            print("Force close\n");
+            if (fd > 0) {
+                Posix.close(fd);
+            }
+            Idle.add(() => {
+                    a.acquire(true);
+                    return false;
+                });
+        });
+
+    a.completed.connect((result) => {
+            if (result == PortalManager.Result.OK) {
                 var ci = a.get_cast_info();
+                fd  = ci.fd;
                 print("Fd = %d\n", ci.fd);
                 ci.sources.foreach((s) => {
                         print("si{nodeid=%u w=%d h=%d x=%d y=%d source-type=%u id=%s}\n",
@@ -312,8 +353,8 @@ public static int main(string?[] args) {
                 print("Restore token = %s\n", a.get_token());
             } else {
                 print("Portal Fail %s\n", result.to_string());
+                loop.quit();
             }
-            loop.quit();
         });
     Idle.add(() => {
             a.acquire(true);

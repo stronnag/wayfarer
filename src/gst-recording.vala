@@ -14,7 +14,7 @@ public class MediaRecorder : GLib.Object {
         state = State.NONE;
     }
 
-    public bool StartCapture (ScreenCap.Options o, GenericArray<PortalManager.SourceInfo?> sources, out string fname) {
+    public bool start_capture (ScreenCap.Options o, GenericArray<PortalManager.SourceInfo?> sources, out string fname) {
         stderr.printf("Media: %s\n", o.mediatype);
         stderr.printf("Capture audio: %s\n", o.capaudio.to_string());
         stderr.printf("Full screen: %s\n", o.fullscreen.to_string());
@@ -73,8 +73,13 @@ public class MediaRecorder : GLib.Object {
 			});
 	}
 
-    public void StopRecording() {
+    public void stop_recording() {
 		pipeline.send_event (new Gst.Event.eos () );
         state = State.NONE;
 	}
+
+    public void force_quit() {
+        pipeline.set_state (Gst.State.NULL);
+        pipeline = null;
+    }
 }

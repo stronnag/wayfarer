@@ -49,7 +49,8 @@ public class ScreenCap : Object {
 
     public bool capture(GenericArray<PortalManager.SourceInfo?>sources, out string fname) {
         bool ok = false;
-        ok = mediarec.StartCapture(options, sources, out fname);
+        astate = STATE.None;
+        ok = mediarec.start_capture(options, sources, out fname);
         if (ok) {
             astate |= STATE.Pipewire;
         }
@@ -108,9 +109,14 @@ public class ScreenCap : Object {
         return at;
     }
 
-    public void post_process() {
-		mediarec.StopRecording();
-		astate = STATE.None;
+    public void post_process(bool forced = false) {
+        if (astate != STATE.None) {
+            mediarec.stop_recording();
+            if (forced) {
+                mediarec.force_quit();
+            }
+        }
+        astate = STATE.None;
     }
 
 	public void set_bbox(int x0, int y0, int x1, int y1) {
