@@ -200,7 +200,7 @@ public class MyApplication : Gtk.Application {
                 conf.frame_rate = framerate.get_value_as_int();
                 sc.options.framerate = (int)conf.frame_rate;
                 sc.options.audiorate = (int)conf.audio_rate;
-                sc.options.adevice = audiosource.active_id;
+                sc.options.adevice = (validaudio) ? audiosource.active_id : null;
 				sc.options.fd = fd;
                 sc.options.mediatype = mediasel.active_id;
                 sc.options.fullscreen = fullscreen.active;
@@ -280,22 +280,22 @@ public class MyApplication : Gtk.Application {
 
         if(at.length == 0) {
             stderr.puts("No audio sources found\n");
-			audiorecord.active = false;
-        }
-
-		if(conf.audio_device.length > 4) {
-            foreach(var a in at) {
-                if (a.device == conf.audio_device) {
-                    audiosource.active_id = conf.audio_device;
-                    validaudio = true;
-                    break;
+            validaudio = false;
+        } else {
+            if(conf.audio_device.length > 4) {
+                foreach(var a in at) {
+                    if (a.device == conf.audio_device) {
+                        audiosource.active_id = conf.audio_device;
+                        validaudio = true;
+                        break;
+                    }
                 }
             }
+            if (!validaudio) {
+                audiosource.active_id = at[0].device;
+                validaudio = true;
+            }
         }
-
-        if(!validaudio) {
-			audiosource.active = 0;
-		}
 
         Unix.signal_add(Posix.Signal.USR1, () => {
                 do_stop_action();
