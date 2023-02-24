@@ -461,6 +461,8 @@ public class MyApplication : Gtk.Application {
         } else {
             if (pwresult == PortalManager.Result.OK) {
                 pw.close();
+                startbutton.sensitive = false;
+                fd = -1;
             }
         }
     }

@@ -40,7 +40,7 @@ class Encoders {
                  {{"profile", "baseline"}},
                  {{"qp-max", 17},
                   {"speed-preset", "super-fast"},
-                  {"threads", preferred_threads()}},
+                  {"threads", Utils.preferred_threads()}},
                 },
                 {"opusenc", {}, {}},
                 {"matroskamux", {}, {}},
@@ -58,7 +58,7 @@ class Encoders {
                   {"static-threshold", 1000},
                   {"keyframe-mode", "disabled"},
                   {"buffer-size", 20000},
-                  {"threads", preferred_threads()}},
+                  {"threads", Utils.preferred_threads()}},
                 },
                 {"opusenc", {},{}},
                 {"webmmux", {},{}}
@@ -71,7 +71,7 @@ class Encoders {
                  {{"profile", "baseline"}},
                  {{"qp-max", 17},
                   {"speed-preset", "superfast"},
-                  {"threads", preferred_threads()}},
+                  {"threads", Utils.preferred_threads()}},
                 },
                 {"lamemp3enc", {},{}},
                 {"mp4mux", {},{}}
@@ -88,7 +88,7 @@ class Encoders {
                  {"static-threshold", 100},
                  {"keyframe-mode", "disabled"},
                  {"buffer-size", 20000},
-                 {"threads", preferred_threads()}},
+                 {"threads", Utils.preferred_threads()}},
                 },
                 {"opusenc", {},{}},
                 {"webmmux", {},{}}
@@ -102,7 +102,7 @@ class Encoders {
                  {"cpu-used", 8},
                  {"end-usage", "cq"},
                  {"buffer-sz", 20000},
-                 {"threads", preferred_threads()}},
+                 {"threads", Utils.preferred_threads()}},
                 },
                 {"opusenc", {},{}},
                 {"webmmux", {},{}}
@@ -137,10 +137,6 @@ class Encoders {
             eprofiles[j].is_valid = profile_valid(e);
             j++;
         }
-    }
-
-    public static uint preferred_threads() {
-        return 1+get_num_processors()/2;
     }
 
     public static EProfile[] get_all() {
