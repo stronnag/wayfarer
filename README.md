@@ -16,6 +16,7 @@ Requires:
 * Gtk 4
 * Vala
 * Gstreamer 1.0
+* libpulse-mainloop-glib
 * (optional, otherwise installed locally by the build system), Blueprint (Gtk Builder compiler).
 
 * XDG Portal (at run time)
