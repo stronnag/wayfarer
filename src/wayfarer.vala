@@ -205,6 +205,12 @@ public class MyApplication : Gtk.Application {
                 sc.options.mediatype = mediasel.active_id;
                 sc.options.fullscreen = fullscreen.active;
                 sc.options.dirname = conf.video_dir;
+                if (conf.video_dir.length > 0) {
+                    try {
+                        var file = File.new_for_path(conf.video_dir);
+                        file.make_directory_with_parents();
+                    } catch {}
+                }
 
                 window.hide();
 
