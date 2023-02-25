@@ -230,9 +230,11 @@ public class MyApplication : Gtk.Application {
         fullscreen.toggled.connect(() => {
                 update_status_label();
                 if (pw_session == PWSession.WAYLAND) {
-                    conf.restore_token = ""; // may wish to select different monitor ...
-                    pw.set_token(null);
-                    set_start_active(false);
+                    if (Gdk.Display.get_default().get_monitors().get_n_items() > 1) {
+                        conf.restore_token = ""; // may wish to select different monitor ...
+                        pw.set_token(null);
+                        set_start_active(false);
+                    }
                 }
             });
 
@@ -309,7 +311,7 @@ public class MyApplication : Gtk.Application {
         if(pw_session == PWSession.WAYLAND) {
             pw = new PortalManager(conf.restore_token);
             pw.closed.connect(() => {
-                    stderr.printf("Portal closed remotely [%d]\n", fd);
+                    stderr.printf("Portal cancelled / closed remotely [%d]\n", fd);
                     if(fd > 0) {
                         Posix.close(fd);
                         fd = -1;
@@ -502,12 +504,8 @@ public class MyApplication : Gtk.Application {
 
     private void set_start_active(bool act) {
         startbutton.sensitive = act;
-        if (act == true)
-            startbutton.set_name("active");
-        else
-            startbutton.set_name("normal");
+        startbutton.set_name((act) ? "record" : "GtkButton");
     }
-
 
     private void do_stop_action(bool forced = false) {
         if(timerid > 0) {
