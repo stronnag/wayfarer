@@ -122,6 +122,8 @@ public class MyApplication : Gtk.Application {
         }
 
         stopwindow = builder.get_object("stopwindow") as Window;
+        stopwindow.set_icon_name("wayfarer");
+
 		var stoprecbutton = builder.get_object("stoprecbutton") as Button;
 		stopwindow.close_request.connect(() => {
 				return true;
