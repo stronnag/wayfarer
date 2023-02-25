@@ -101,6 +101,7 @@ public class MyApplication : Gtk.Application {
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
 
+        Utils.setup_css(startbutton);
         pw_result = PortalManager.Result.UNKNOWN;
 
         pw_session = (Environment.get_variable("XDG_SESSION_TYPE") == "wayland") ? PWSession.WAYLAND : PWSession.X11;
@@ -224,14 +225,14 @@ public class MyApplication : Gtk.Application {
 		set_accels_for_action ("win.about", { "F1" });
 		set_accels_for_action ("win.prefs", {"<Ctrl>p"});
 
-        startbutton.sensitive = false;
+        set_start_active(false);
 
         fullscreen.toggled.connect(() => {
                 update_status_label();
                 if (pw_session == PWSession.WAYLAND) {
                     conf.restore_token = ""; // may wish to select different monitor ...
                     pw.set_token(null);
-                    startbutton.sensitive = false;
+                    set_start_active(false);
                 }
             });
 
@@ -331,7 +332,7 @@ public class MyApplication : Gtk.Application {
                                     update_status_label();
                                 }
                             }
-                            startbutton.sensitive = validate_start();
+                            set_start_active(validate_start());
                         }
                     } else {
                         start_recording(validaudio);
@@ -496,8 +497,17 @@ public class MyApplication : Gtk.Application {
 			sb.append("Full screen");
 		}
 		statuslabel.label=sb.str;
-		startbutton.sensitive = validate_start();
+		set_start_active(validate_start());
     }
+
+    private void set_start_active(bool act) {
+        startbutton.sensitive = act;
+        if (act == true)
+            startbutton.set_name("active");
+        else
+            startbutton.set_name("normal");
+    }
+
 
     private void do_stop_action(bool forced = false) {
         if(timerid > 0) {
