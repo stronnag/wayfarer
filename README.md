@@ -16,7 +16,7 @@ Requires:
 * Gtk 4
 * Vala
 * Gstreamer 1.0
-* libpulse-mainloop-glib
+* libpulse-mainloop-glib (libpulse-dev on Debian et al.)
 * (optional, otherwise installed locally by the build system), Blueprint (Gtk Builder compiler).
 
 * XDG Portal (at run time)
@@ -30,7 +30,7 @@ There is also an obsolete  Gtk3 branch
 * XDG Portal
 
 
-**wayfarer** supports MKV, MP4 and WebM video container (vp8, vp9, mp4) with Opus or MP3 as the audio format. The available video codecs presented in the UI are those available on your system. Where VAAPI versions are available, they will also be offered.
+**wayfarer** supports MKV, MP4 and WebM video container (vp8, vp9, mp4) with Opus or MP3 as the audio format. The available video codecs presented in the UI are those discovered on your system. Where VAAPI versions are available, they will also be offered.
 
 wayfarer uses the XDG Portal on modern desktops, with all the pain and diminished functionality that the portal implies.
 

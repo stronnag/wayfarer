@@ -2,6 +2,17 @@ using Gtk;
 using Gst;
 
 public class MyApplication : Gtk.Application {
+    private enum PWAction {
+        NONE,
+        SET_AREA,
+        START_RECORDING,
+    }
+
+    private enum PWSession {
+        X11,
+        WAYLAND,
+    }
+
     Gtk.ApplicationWindow window;
     private ScreenCap sc;
     private uint8 have_area;
@@ -20,8 +31,15 @@ public class MyApplication : Gtk.Application {
 	private Window stopwindow;
     private Gtk.Label runtimerlabel;
     private Gtk.SpinButton framerate;
-    private PortalManager.Result pwresult;
+    private ComboBoxText audiosource;
+    private CheckButton audiorecord;
+    private CheckButton mouserecord;
+    private SpinButton delayspin;
+    private SpinButton recordtimer;
 
+    private PortalManager.Result pw_result;
+    private PWAction pw_action;
+    private PWSession pw_session;
 	private int fd;
     GenericArray<PortalManager.SourceInfo?> sources;
 
@@ -66,12 +84,13 @@ public class MyApplication : Gtk.Application {
 
         dirchooser = builder.get_object("dirchooser") as Button;
 		var dirlabel = builder.get_object("dirlabel") as Label;
-        ComboBoxText audiosource = builder.get_object("audiosource") as ComboBoxText;
-        CheckButton audiorecord =  builder.get_object("audiorecord") as CheckButton;
-        CheckButton mouserecord =  builder.get_object("mouserecord") as CheckButton;
+        audiosource = builder.get_object("audiosource") as ComboBoxText;
+        audiorecord =  builder.get_object("audiorecord") as CheckButton;
+        mouserecord =  builder.get_object("mouserecord") as CheckButton;
         framerate = builder.get_object("framerate") as SpinButton;
-        SpinButton delayspin = builder.get_object("delay") as SpinButton;
-        SpinButton recordtimer = builder.get_object("recordtimer") as SpinButton;
+        delayspin = builder.get_object("delay") as SpinButton;
+        recordtimer = builder.get_object("recordtimer") as SpinButton;
+
         Gtk.Button areabutton = builder.get_object("areabutton") as Button;
 
         Gtk.AboutDialog about = builder.get_object ("wayfarerabout") as Gtk.AboutDialog;
@@ -82,13 +101,23 @@ public class MyApplication : Gtk.Application {
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
 
-        pwresult = PortalManager.Result.UNKNOWN;
+        pw_result = PortalManager.Result.UNKNOWN;
+
+        pw_session = (Environment.get_variable("XDG_SESSION_TYPE") == "wayland") ? PWSession.WAYLAND : PWSession.X11;
 
         conf = new Conf();
 
+        bool mediaset = false;
         foreach (var e in Encoders.list_profiles()) {
             if (e.is_valid) {
                 mediasel.append(e.name, e.pname);
+                if (!mediaset) {
+                    mediasel.active_id = e.name;
+                    mediaset = true;
+                }
+                if (e.pname == conf.media_type) {
+                    mediasel.active_id = conf.media_type;
+                }
             }
         }
 
@@ -102,10 +131,13 @@ public class MyApplication : Gtk.Application {
 				do_stop_action();
 			});
 
-        about.version = WAYFARER_VERSION_STRING;
+        about.version = "%s (%s)".printf(WAYFARER_VERSION_STRING, WAYFARER_GITVERS);
 		about.set_transient_for(window);
 		about.modal = true;
 		about.authors = {"Jonathan Hudson <jh+github@daria.co.uk>"};
+
+        stderr.printf("wayfarer v%s (%s, %s, %s)\n", WAYFARER_VERSION_STRING, WAYFARER_GITVERS,
+                      WAYFARER_GITBRANCH, WAYFARER_GITSTAMP);
 
 		prefs.set_transient_for(window);
 		prefs.modal = true;
@@ -172,14 +204,18 @@ public class MyApplication : Gtk.Application {
         window.add_action(saq);
 
         saq = new GLib.SimpleAction("nopersist",null);
-        saq.activate.connect(() => {
-                stderr.printf("Clearing token\n");
-                conf.restore_token = "";
-				pw.set_token(null);
+        if (pw_session == PWSession.WAYLAND) {
+            saq.activate.connect(() => {
+                    stderr.printf("Clearing token\n");
+                    conf.restore_token = "";
+                    pw.set_token(null);
             });
+        } else {
+            saq.set_enabled(false);
+        }
         window.add_action(saq);
 
-		set_accels_for_action ("win.nopersist", {"<Ctrl>z"});
+		set_accels_for_action ("win.nopersist", {"<Ctrl>r"});
 		set_accels_for_action ("win.quit", {"<Ctrl>q"});
 		set_accels_for_action ("win.about", { "F1" });
 		set_accels_for_action ("win.prefs", {"<Ctrl>p"});
@@ -187,6 +223,11 @@ public class MyApplication : Gtk.Application {
         startbutton.sensitive = false;
 
         fullscreen.toggled.connect(() => {
+                if (pw_session == PWSession.WAYLAND) {
+                    conf.restore_token = "";
+                    pw.set_token(null);
+                    startbutton.sensitive = false;
+                }
                 update_status_label();
             });
 
@@ -195,83 +236,12 @@ public class MyApplication : Gtk.Application {
         sc = new ScreenCap();
 
         startbutton.clicked.connect(() => {
-                sc.options.capaudio = (validaudio)  ? audiorecord.active : false;
-                sc.options.capmouse = mouserecord.active;
-                conf.frame_rate = framerate.get_value_as_int();
-                sc.options.framerate = (int)conf.frame_rate;
-                sc.options.audiorate = (int)conf.audio_rate;
-                sc.options.adevice = (validaudio) ? audiosource.active_id : null;
-				sc.options.fd = fd;
-                sc.options.mediatype = mediasel.active_id;
-                sc.options.fullscreen = fullscreen.active;
-                sc.options.dirname = conf.video_dir;
-                if (conf.video_dir.length > 0) {
-                    try {
-                        var file = File.new_for_path(conf.video_dir);
-                        file.make_directory_with_parents();
-                    } catch {}
+                if(pw_session == PWSession.X11 || fd > 0) {
+                    start_recording(validaudio);
+                } else {
+                    pw_action = START_RECORDING;
+                    pw.acquire(mouserecord.active);
                 }
-
-                window.hide();
-
-                if (!conf.notify_stop) {
-                    runtimerlabel.label = "00:00";
-                    stopwindow.present();
-                }
-
-                var delay = delayspin.get_value();
-
-                if(conf.notify_start || conf.notify_stop) {
-                    if(delay < 2) {
-                        nt.send_notification("Ready to record", "Click me to stop", (conf.notify_stop) ? 0 :1000);
-                    } else {
-                        var ctr = (int)(delay);
-                        var str = "Starting in %ds\n".printf(ctr);
-                        nt.send_notification("Ready to record", str, (conf.notify_stop)? 0 :1000);
-                        ctr--;
-                        Timeout.add_seconds(1, () => {
-                                str = "Starting in %ds\n".printf(ctr);
-                                nt.send_notification("Ready to record", (ctr>1) ? str : "Close me to stop", (conf.notify_stop)? 0 :1000);
-                                ctr--;
-                                if(ctr <= 0)
-                                    return Source.REMOVE;
-                                else
-                                    return Source.CONTINUE;
-                            });
-                    }
-                }
-
-                Timeout.add((uint)(1000*delay), () => {
-                        var runtime = recordtimer.get_value_as_int();
-                        if(runtime > 0) {
-                            timerid = Timeout.add_seconds(runtime, () => {
-                                    do_stop_action();
-                                    return Source.REMOVE;
-                                });
-                        }
-                        if(!conf.notify_stop)
-                            nt.close_last();
-                        var res = sc.capture(sources, out filename);
-                        if (res) {
-                            fileentry.text = filename;
-                            if (!conf.notify_stop) {
-                                var rt = new Timer();
-                                runtimerid = Timeout.add_seconds(1, () => {
-                                        var secs = (int)rt.elapsed(null);
-                                        runtimerlabel.label = "%02d:%02d".printf(secs / 60, secs % 60);
-                                        return true;
-                                });
-                            }
-                        } else {
-                            if(timerid > 0) {
-                                Source.remove(timerid);
-                                timerid = 0;
-                            }
-                            statuslabel.label = "Failed to record";
-                            window.show();
-                        }
-                        return Source.REMOVE;
-                    });
             });
 
 		sc.report_gst_error.connect((s) => {
@@ -315,12 +285,6 @@ public class MyApplication : Gtk.Application {
                 conf.frame_rate = (uint32)framerate.value;
             });
 
-        if (conf.media_type != null && conf.media_type.length != 0) {
-			mediasel.active_id = conf.media_type;
-		} else {
-            mediasel.active_id = "webm";
-        }
-
 		if(conf.video_dir != null) {
 			dirlabel.label = Path.get_basename(conf.video_dir);
 		}
@@ -337,48 +301,47 @@ public class MyApplication : Gtk.Application {
 
         sources = new GenericArray<PortalManager.SourceInfo?>();
 
-        bool is_x11 = (Environment.get_variable("XDG_SESSION_TYPE") == "x11");
-
-        pw = new PortalManager(conf.restore_token);
-
-        pw.closed.connect(() => {
-                stderr.printf("Portal closed remotely\n");
-                if(fd > 0) {
-                    Posix.close(fd);
-                    fd = -1;
-                    do_stop_action(true);
-                }
-            });
-
-        pw.completed.connect((result) => {
-                pwresult = result;
-                if(result == PortalManager.Result.OK) {
-                    var ci = pw.get_cast_info();
-                    if (ci.fd > -1  && ci.sources.length > 0 ) {
-                        fd = ci.fd;
-                        sources = ci.sources;
-                        if (sources[0].source_type == 1 || sources[0].source_type == 0) {
-                            run_area_selection();
-                        } else {
-                            have_area = 2;
-                            update_status_label();
-                        }
+        if(pw_session == PWSession.WAYLAND) {
+            pw = new PortalManager(conf.restore_token);
+            pw.closed.connect(() => {
+                    stderr.printf("Portal closed remotely [%d]\n", fd);
+                    if(fd > 0) {
+                        Posix.close(fd);
+                        fd = -1;
+                        do_stop_action(true);
                     }
-                } else if (is_x11) {
-                    run_area_selection();
-                } else {
-                    statuslabel.label = "Portal cancelled or failed";
-                    stderr.printf("Portal Result: %s\n", result.to_string());
-                }
-                startbutton.sensitive = validate_start();
-            });
+                });
+
+            pw.completed.connect((result) => {
+                    pw_result = result;
+                    if (pw_action == PWAction.SET_AREA) {
+                        if(result == PortalManager.Result.OK) {
+                            var ci = pw.get_cast_info();
+                            if (ci.fd > -1  && ci.sources.length > 0 ) {
+                                fd = ci.fd;
+                                sources = ci.sources;
+                                if (sources[0].source_type == 1 || sources[0].source_type == 0) {
+                                    run_area_selection();
+                                } else {
+                                    have_area = 2;
+                                    update_status_label();
+                                }
+                            }
+                            startbutton.sensitive = validate_start();
+                        }
+                    } else {
+                        start_recording(validaudio);
+                    }
+                });
+        }
 
         areabutton.clicked.connect(() => {
-                sources.remove_range(0,sources.length);
-                if (pwresult == PortalManager.Result.OK || pwresult == PortalManager.Result.UNKNOWN) {
-                    pw.acquire(mouserecord.active);
-                } else if (is_x11) {
+                if (pw_session == PWSession.X11) {
                     run_area_selection();
+                } else {
+                    sources.remove_range(0,sources.length);
+                    pw_action = PWAction.SET_AREA;
+                    pw.acquire(mouserecord.active);
                 }
             });
 
@@ -388,6 +351,86 @@ public class MyApplication : Gtk.Application {
                     do_stop_action();
             });
         window.show ();
+    }
+
+    private void start_recording(bool validaudio) {
+        sc.options.capaudio = (validaudio)  ? audiorecord.active : false;
+        sc.options.capmouse = mouserecord.active;
+        conf.frame_rate = framerate.get_value_as_int();
+        sc.options.framerate = (int)conf.frame_rate;
+        sc.options.audiorate = (int)conf.audio_rate;
+        sc.options.adevice = (validaudio) ? audiosource.active_id : null;
+        sc.options.fd = fd;
+        sc.options.mediatype = mediasel.active_id;
+        sc.options.fullscreen = fullscreen.active;
+        sc.options.dirname = conf.video_dir;
+        if (conf.video_dir.length > 0) {
+            try {
+                var file = File.new_for_path(conf.video_dir);
+                file.make_directory_with_parents();
+            } catch {}
+        }
+
+        window.hide();
+
+        if (!conf.notify_stop) {
+            runtimerlabel.label = "00:00";
+            stopwindow.present();
+        }
+
+        var delay = delayspin.get_value();
+
+        if(conf.notify_start || conf.notify_stop) {
+            if(delay < 2) {
+                nt.send_notification("Ready to record", "Click me to stop", (conf.notify_stop) ? 0 :1000);
+            } else {
+                var ctr = (int)(delay);
+                var str = "Starting in %ds\n".printf(ctr);
+                nt.send_notification("Ready to record", str, (conf.notify_stop)? 0 :1000);
+                ctr--;
+                Timeout.add_seconds(1, () => {
+                        str = "Starting in %ds\n".printf(ctr);
+                        nt.send_notification("Ready to record", (ctr>1) ? str : "Close me to stop", (conf.notify_stop)? 0 :1000);
+                        ctr--;
+                        if(ctr <= 0)
+                            return Source.REMOVE;
+                        else
+                            return Source.CONTINUE;
+                    });
+            }
+        }
+
+        Timeout.add((uint)(1000*delay), () => {
+                var runtime = recordtimer.get_value_as_int();
+                if(runtime > 0) {
+                    timerid = Timeout.add_seconds(runtime, () => {
+                            do_stop_action();
+                            return Source.REMOVE;
+                        });
+                }
+                if(!conf.notify_stop)
+                    nt.close_last();
+                var res = sc.capture(sources, out filename);
+                if (res) {
+                    fileentry.text = filename;
+                    if (!conf.notify_stop) {
+                        var rt = new Timer();
+                        runtimerid = Timeout.add_seconds(1, () => {
+                                var secs = (int)rt.elapsed(null);
+                                runtimerlabel.label = "%02d:%02d".printf(secs / 60, secs % 60);
+                                return true;
+                            });
+                    }
+                } else {
+                    if(timerid > 0) {
+                        Source.remove(timerid);
+                        timerid = 0;
+                    }
+                    statuslabel.label = "Failed to record";
+                    window.show();
+                }
+                return Source.REMOVE;
+            });
     }
 
     private void run_area_selection() {
@@ -424,9 +467,12 @@ public class MyApplication : Gtk.Application {
     }
 
     private bool validate_start() {
-        return ((fd > 0 || fd == -1) && (fullscreen.active || have_area > 0));
+        bool valid = (fullscreen.active || have_area > 0);
+        if(pw_session == PWSession.WAYLAND) {
+            valid = valid && (fd > 0);
+        }
+        return valid;
     }
-
 
     private void update_status_label(string? astr=null) {
         StringBuilder sb = new StringBuilder();
@@ -463,11 +509,10 @@ public class MyApplication : Gtk.Application {
         window.show();
         sc.post_process(forced);
         if (forced) {
-            startbutton.sensitive = false;
+//            startbutton.sensitive = false;
         } else {
-            if (pwresult == PortalManager.Result.OK) {
+            if(pw_session == PWSession.WAYLAND && pw_result == PortalManager.Result.OK) {
                 pw.close();
-                startbutton.sensitive = false;
                 fd = -1;
             }
         }
@@ -481,11 +526,13 @@ public class MyApplication : Gtk.Application {
 
     private void save_config() {
         conf.frame_rate = framerate.get_value_as_int();
-        var t = pw.get_token();
-        if (t == null) {
-            t = "";
+        if(pw_session == PWSession.WAYLAND) {
+            var t = pw.get_token();
+            if (t == null) {
+                t = "";
+            }
+            conf.restore_token = t;
         }
-        conf.restore_token = t;
         GLib.Settings.sync();
     }
 
