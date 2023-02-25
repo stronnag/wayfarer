@@ -1,3 +1,10 @@
+getinfo = files('getinfo.sh')
+
+wayvers_h = custom_target(
+    'wayvers.h',
+    output : 'wayvers.h',
+    command : [getinfo, '@OUTPUT@'],
+)
 
 vapi_dir = meson.current_source_dir() / 'vapi'
 

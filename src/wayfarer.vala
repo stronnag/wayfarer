@@ -136,8 +136,10 @@ public class MyApplication : Gtk.Application {
 		about.modal = true;
 		about.authors = {"Jonathan Hudson <jh+github@daria.co.uk>"};
 
-        stderr.printf("wayfarer v%s (%s, %s, %s)\n", WAYFARER_VERSION_STRING, WAYFARER_GITVERS,
-                      WAYFARER_GITBRANCH, WAYFARER_GITSTAMP);
+        stderr.printf("Version Info: v%s (%s, %s, %s)\n", WAYFARER_VERSION_STRING,
+                      WAYFARER_GITVERS, WAYFARER_GITBRANCH, WAYFARER_GITSTAMP);
+
+        stderr.printf("Build Info: %s, %s\n", BUILDINFO, COMPINFO);
 
 		prefs.set_transient_for(window);
 		prefs.modal = true;
@@ -223,12 +225,12 @@ public class MyApplication : Gtk.Application {
         startbutton.sensitive = false;
 
         fullscreen.toggled.connect(() => {
+                update_status_label();
                 if (pw_session == PWSession.WAYLAND) {
-                    conf.restore_token = "";
+                    conf.restore_token = ""; // may wish to select different monitor ...
                     pw.set_token(null);
                     startbutton.sensitive = false;
                 }
-                update_status_label();
             });
 
         window.set_icon_name("wayfarer");

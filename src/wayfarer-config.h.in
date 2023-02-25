@@ -1,4 +1,1 @@
 #define WAYFARER_VERSION_STRING @version@
-#define WAYFARER_GITVERS @gitvers@
-#define WAYFARER_GITBRANCH @gitbranch@
-#define WAYFARER_GITSTAMP @gitstamp@
