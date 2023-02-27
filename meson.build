@@ -1,4 +1,4 @@
-project('wayfarer', 'vala', 'c', version : '1.0.0')
+project('wayfarer', 'vala', 'c', version : '1.0.1')
 
 conf_data = configuration_data()
 conf_data.set_quoted('version', meson.project_version())
