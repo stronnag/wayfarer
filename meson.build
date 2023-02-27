@@ -2,19 +2,14 @@ project('wayfarer', 'vala', 'c', version : '1.0.0')
 
 conf_data = configuration_data()
 conf_data.set_quoted('version', meson.project_version())
-
-#res = run_command(['git', 'rev-parse', '--short', 'HEAD'], capture : true, check : true)
-#gitvers = res.stdout().strip()
-#res = run_command(['git', 'branch', '--show-current'], capture : true, check : true)
-#gitbranch = res.stdout().strip()
-#res = run_command(['git', 'log', '-1', '--format=%cI'], capture : true, check : true)
-#gitstamp = res.stdout().strip()
-
-#conf_data.set_quoted('gitvers', gitvers)
-#conf_data.set_quoted('gitbranch',  gitbranch)
-#conf_data.set_quoted('gitstamp', gitstamp)
-
 app = 'wayfarer'
+
+pymodule = import('python3')
+python3 = pymodule.find_python()
+res = run_command(python3, 'meson/baseinfo.py', check: true)
+if res.returncode() == 0
+  message(res.stdout().strip())
+endif
 
 gnome = import('gnome')
 
