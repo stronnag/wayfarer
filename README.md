@@ -41,8 +41,10 @@ wayfarer uses the XDG Portal on modern desktops, with all the pain and diminishe
 
 ![Main Window](data/assets/wayfarer-window.png)
 
-* Define an area using the `Set Source` control. Drag the displayed control to size, ESC to abort.
-* Select the audio source
+* Define an area using the `Set Source` control. Drag the displayed control to size.
+    - Right Mouse Button, Middle Mouse Button, "Space" or "Enter" to confirm.
+    - "Esc" to abort.
+* Confirm the audio source
 * `Delay` defines a delay (seconds) before recording starts
 * `Timer` defines the length of the recording (seconds) : 0 (default) means user will stop the recording.
 * `Record` starts the recording; requires an area defined or `Fullscreen`

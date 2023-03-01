@@ -39,6 +39,7 @@ executable(
       dependency('libpulse-mainloop-glib'),
       deps,
       meson.get_compiler('vala').find_library('posix'),
+      meson.get_compiler('c').find_library('m'),
     ],
     sources: wayvers_h,
     include_directories : configuration_inc,

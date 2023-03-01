@@ -1,25 +1,25 @@
 using Gtk 4.0;
 
 Gtk.Adjustment adjustment1 {
- lower: 5;
- upper: 120;
- value: 30;
- step-increment: 1;
- page-increment: 10;
+  lower: 5;
+  upper: 120;
+  value: 30;
+  step-increment: 1;
+  page-increment: 10;
 }
 
 Gtk.Adjustment adjustment2 {
- upper: 120;
- value: 0;
- step-increment: 1;
- page-increment: 10;
+  upper: 120;
+  value: 0;
+  step-increment: 1;
+  page-increment: 10;
 }
 
 Gtk.Adjustment adjustment3 {
- upper: 3600;
- value: 0;
- step-increment: 1;
- page-increment: 10;
+  upper: 3600;
+  value: 0;
+  step-increment: 1;
+  page-increment: 10;
 }
 
 Gtk.ApplicationWindow window {
@@ -31,169 +31,164 @@ Gtk.ApplicationWindow window {
       [start]
       Gtk.Button areabutton {
         Gtk.Box {
-        [start]
-        Gtk.Image {
-          icon-name: "zoom-fit-best-symbolic";
-        }
-        Gtk.Label {
-          label: "Set Source";
-        }
+          [start]
+          Gtk.Image {
+            icon-name: "zoom-fit-best-symbolic";
+          }
+          Gtk.Label {
+            label: "Set Source";
+          }
+	}
       }
-     }
       Gtk.Button startbutton {
         Gtk.Box {
-        [start]
-        Gtk.Image {
-          icon-name: "media-record-symbolic";
-        }
-        Gtk.Label {
-          label: "Record";
-        }
+          [start]
+          Gtk.Image {
+            icon-name: "media-record-symbolic";
+          }
+          Gtk.Label {
+            label: "Record";
+          }
+	}
       }
-     }
-   }
-   [end]
-   MenuButton button_menu {
-     menu-model: popmenu;
-     icon-name: "open-menu-symbolic";
-     primary: true;
-  }
+    }
+    [end]
+    MenuButton button_menu {
+      menu-model: popmenu;
+      icon-name: "open-menu-symbolic";
+      primary: true;
+    }
   };
 
   Gtk.Box {
-	orientation: vertical;
-	spacing: 2;
+    orientation: vertical;
+    spacing: 2;
     // Row 1
     Gtk.Box {
-	spacing: 4;
-	orientation: horizontal;
-	[start]
-	Gtk.Button dirchooser {
-    	  Gtk.Box {
+      spacing: 4;
+      orientation: horizontal;
+      [start]
+      Gtk.Button dirchooser {
+    	Gtk.Box {
 	  spacing: 4;
 	  [start]
-	    Gtk.Image {
-	     icon-name: "folder-videos-symbolic";
-	    }
-	    Gtk.Label dirlabel {
-	    }
+	  Gtk.Image {
+	    icon-name: "folder-videos-symbolic";
 	  }
-	}
-	Gtk.Entry filename {
-	  placeholder-text: "Auto-generated name";
-	  editable: false;
-	  halign: fill;
-	  hexpand: true;
-	}
-
-	Gtk.ComboBoxText media_sel {
-        }
-     }
-     // Row 2
-     Gtk.Box {
-	spacing: 4;
-        orientation: horizontal;
-	[start]
-	Gtk.Label {
-	  label: "Audio Source:";
-	}
-	Gtk.ComboBoxText audiosource {
-	  halign: fill;
+	  Gtk.Label dirlabel {
+	  }
 	}
       }
+      Gtk.Entry filename {
+	placeholder-text: "Auto-generated name";
+	editable: false;
+	halign: fill;
+	hexpand: true;
+      }
+      Gtk.ComboBoxText media_sel {
+      }
+    }
+    // Row 2
+    Gtk.Box {
+      spacing: 4;
+      orientation: horizontal;
+      [start]
+      Gtk.Label {
+	label: "Audio Source:";
+      }
+      Gtk.ComboBoxText audiosource {
+	halign: fill;
+      }
+    }
     // Row 3
-     Gtk.Grid {
-	  hexpand: true;
-	  halign: fill;
-	  row-spacing: 2;
-	  column-spacing: 8;
-	  Gtk.CheckButton audiorecord {
-	    label: "Record Audio";
-	    active: true;
-            layout {
-	      row: 0;
-	      column: 0;
-            }
-	  }
-	  Gtk.CheckButton mouserecord {
-	    label: "Include Mouse";
-	    active: true;
-            layout {
-	      row: 1;
-	      column: 0;
-            }
-	  }
-	  Gtk.CheckButton fullscreen {
-	    label: "Full Screen";
-	    active: false;
-            layout {
-	      row: 2;
-	      column: 0;
-            }
-	  }
-
-	   Gtk.Label {
-	    justify: right;
-            halign: end;
-	    label: "Frame Rate:";
-            layout {
-	      row: 0;
-	      column: 1;
-            }
-	   }
-	   Gtk.SpinButton framerate {
-             numeric: true;
-             value: 30;
-             adjustment: adjustment1;
-            layout {
-	      row: 0;
-	      column: 2;
-            }
-           }
-
-	   Gtk.Label {
-	    justify: right;
-            halign: end;
-	    label: "Delay:";
-            layout {
-	      row: 1;
-	      column: 1;
-            }
-
-	   }
-           Gtk.SpinButton delay {
-             digits: 3;
-             value: 0;
-             adjustment: adjustment2;
-            layout {
-	      row: 1;
-	      column: 2;
-            }
-	   }
-
-	   Gtk.Label {
-	    justify: right;
-            halign: end;
-	    label: "Timer:";
-            layout {
-	      row: 2;
-	      column: 1;
-            }
-	   }
-           Gtk.SpinButton recordtimer {
-	    value: 0;
-            adjustment: adjustment3;
-            layout {
-	      row: 2;
-	      column: 2;
-            }
-         }
-     } // Grid
-     // Row 4
-     Gtk.Label statuslabel {
-       halign: start;
-       margin-start: 8;
-     }
+    Gtk.Grid {
+      hexpand: true;
+      halign: fill;
+      row-spacing: 2;
+      column-spacing: 8;
+      Gtk.CheckButton audiorecord {
+	label: "Record Audio";
+	active: true;
+        layout {
+	  row: 0;
+	  column: 0;
+        }
+      }
+      Gtk.CheckButton mouserecord {
+	label: "Include Mouse";
+	active: true;
+        layout {
+	  row: 1;
+	  column: 0;
+        }
+      }
+      Gtk.CheckButton fullscreen {
+	label: "Full Screen";
+	active: false;
+        layout {
+	  row: 2;
+	  column: 0;
+        }
+      }
+      Gtk.Label {
+	justify: right;
+        halign: end;
+	label: "Frame Rate:";
+        layout {
+	  row: 0;
+	  column: 1;
+        }
+      }
+      Gtk.SpinButton framerate {
+        numeric: true;
+        value: 30;
+        adjustment: adjustment1;
+        layout {
+	  row: 0;
+	  column: 2;
+        }
+      }
+      Gtk.Label {
+	justify: right;
+        halign: end;
+	label: "Delay:";
+        layout {
+	  row: 1;
+	  column: 1;
+        }
+      }
+      Gtk.SpinButton delay {
+        digits: 3;
+        value: 0;
+        adjustment: adjustment2;
+        layout {
+	  row: 1;
+	  column: 2;
+        }
+      }
+      Gtk.Label {
+	justify: right;
+        halign: end;
+	label: "Timer:";
+        layout {
+	  row: 2;
+	  column: 1;
+        }
+      }
+      Gtk.SpinButton recordtimer {
+	value: 0;
+        adjustment: adjustment3;
+        layout {
+	  row: 2;
+	  column: 2;
+        }
+      }
+    } // Grid
+    // Row 4
+    Gtk.Label statuslabel {
+      halign: start;
+      margin-start: 8;
+    }
   }
 }
 menu popmenu {
@@ -220,48 +215,54 @@ menu popmenu {
 }
 
 Gtk.Dialog wayfarerprefs {
-   title: "Preferences";
-   [action response=ok default]
-    Button prefsapply {
-        label: _("Apply");
-    }
+  title: "Preferences";
+  [action response=ok default]
+  Button prefsapply {
+    label: _("Apply");
+  }
 }
 
 Gtk.Box prefsstuff {
-	spacing: 4;
-	orientation: vertical;
-	Gtk.Box {
-	spacing: 8;
-	orientation: horizontal;
-	[start]
-	Gtk.Label {
-         label: "Audio bitrate:";
-	}
-	Gtk.Entry prefs_audiorate {
-	 halign: fill;
-	 placeholder-text: "Audio bitrate";
-	 input-purpose: digits;
-	}
-       }
-       Gtk.Box {
-	spacing: 4;
-	orientation: horizontal;
-	[start]
-        Gtk.CheckButton prefs_not {
-         label: "Use Notifications for ready";
-	 halign: fill;
-	}
-      }
-       Gtk.Box {
-	spacing: 4;
-	orientation: horizontal;
-	[start]
-        Gtk.CheckButton prefs_notall {
-         label: "Use Notifications (vice App Indictor)";
-	 halign: fill;
-	}
-      }
+  spacing: 4;
+  orientation: vertical;
+  Gtk.Box {
+    spacing: 8;
+    orientation: horizontal;
+    [start]
+    Gtk.Label {
+      label: "Audio bitrate:";
+    }
+    Gtk.Entry prefs_audiorate {
+      halign: fill;
+      placeholder-text: "Audio bitrate";
+      input-purpose: digits;
+    }
+  }
+  Gtk.Box {
+    spacing: 4;
+    orientation: horizontal;
+    [start]
+    Gtk.CheckButton prefs_not {
+      label: "Use Notifications for ready";
+      halign: fill;
+    }
+  }
+  Gtk.Box {
+    spacing: 4;
+    orientation: horizontal;
+    [start]
+    Gtk.CheckButton prefs_notall {
+      label: "Use Notifications (vice App Indictor)";
+      halign: fill;
+    }
+  }
 }
+
+/*
+Gtk.StringList authors {
+  strings ["Jonathan Hudson <jh+github@daria.co.uk>"]
+}
+*/
 
 Gtk.AboutDialog wayfarerabout {
   program-name: "Wayfarer";
@@ -271,32 +272,27 @@ Gtk.AboutDialog wayfarerabout {
   website-label: "Wayfarer on GitHub";
   logo-icon-name: "wayfarer";
   license-type: gpl_3_0;
- /*
-  authors: Gtk.StringList {
-   strings  ["Jonathan Hudson <jh+github@daria.co.uk>", ""]
- };
- */
 }
 
 Gtk.Window stopwindow {
   default-width: 160;
   title: "Wayfarer";
   Gtk.Button stoprecbutton {
-   Gtk.Box {
-    spacing: 4;
-    orientation: horizontal;
-    [start]
-    Gtk.Image {
-      icon-name: "media-playback-stop-symbolic";
-    }
-    Gtk.Label {
-      label: "Stop";
-   }
-    Gtk.Label runtimer {
-      label: "00:00";
-       halign: fill;
-       hexpand: true;
+    Gtk.Box {
+      spacing: 4;
+      orientation: horizontal;
+      [start]
+      Gtk.Image {
+	icon-name: "media-playback-stop-symbolic";
+      }
+      Gtk.Label {
+	label: "Stop";
+      }
+      Gtk.Label runtimer {
+	label: "00:00";
+	halign: fill;
+	hexpand: true;
+      }
     }
   }
- }
 }
