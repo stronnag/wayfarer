@@ -49,6 +49,10 @@ wayfarer uses the XDG Portal on modern desktops, with all the pain and diminishe
 * `Timer` defines the length of the recording (seconds) : 0 (default) means user will stop the recording.
 * `Record` starts the recording; requires an area defined or `Fullscreen`
 
+If `Control_L` is pressed when `Set Source` is clicked, then the main window will be hidden during the area selection process.
+
+If `Control_L` is pressed when `Record` is clicked, then the stop recording window will be hidden during the recording process.
+
 Once recording is started:
 
 * If `Timer` is set, the recording will run for the set number of seconds

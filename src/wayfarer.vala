@@ -42,6 +42,8 @@ public class Wayfarer : Gtk.Application {
     private PWSession pw_session;
 	private int fd;
     GenericArray<PortalManager.SourceInfo?> sources;
+    private bool ctrlset;
+    private bool stophide;
 
     public static bool show_version;
 
@@ -100,6 +102,23 @@ public class Wayfarer : Gtk.Application {
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
+
+        var evtk = new EventControllerKey();
+        evtk.set_propagation_phase(PropagationPhase.BUBBLE);
+        ((Gtk.Widget)window).add_controller(evtk);
+
+        evtk.key_pressed.connect((kv, kc, o) => {
+                if (kv == Gdk.Key.Control_L) {
+                    ctrlset = true;
+                }
+                return true;
+            });
+
+        evtk.key_released.connect((kv, kc, o) => {
+                if (kv == Gdk.Key.Control_L) {
+                    ctrlset = false;
+                }
+            });
 
         Utils.setup_css(startbutton);
         pw_result = PortalManager.Result.UNKNOWN;
@@ -243,6 +262,7 @@ public class Wayfarer : Gtk.Application {
         sc = new ScreenCap();
 
         startbutton.clicked.connect(() => {
+                stophide = ctrlset;
                 if(pw_session == PWSession.X11 || fd > 0) {
                     start_recording(validaudio);
                 } else {
@@ -385,6 +405,11 @@ public class Wayfarer : Gtk.Application {
         if (!conf.notify_stop) {
             runtimerlabel.label = "00:00";
             stopwindow.present();
+            if(stophide) {
+                stopwindow.hide();
+                stophide = false;
+            }
+
         }
 
         var delay = delayspin.get_value();
@@ -444,6 +469,9 @@ public class Wayfarer : Gtk.Application {
 
     private void run_area_selection() {
 		if (!fullscreen.active) {
+            if(ctrlset) {
+                window.hide();
+            }
             sw = new AreaWindow ();
             sw.area_set.connect((x0, y0, x1, y1) => {
                     var swh = sw.get_allocated_height();
@@ -483,11 +511,13 @@ public class Wayfarer : Gtk.Application {
                     }
                     sw.destroy();
                     sw = null;
+                    window.show();
 			});
 
             sw.area_quit.connect(() => {
                     sw.destroy();
                     sw = null;
+                    window.show();
                 });
             sw.run (pw_session, sources);
         }
@@ -569,10 +599,6 @@ public class Wayfarer : Gtk.Application {
     }
 
     public static int main (string[] args) {
-        if (Environment.get_variable("XDG_SESSION_DESKTOP") == "gnome") {
-            Environment.set_variable("GDK_BACKEND", "x11", true);
-        }
-
         Gst.init(ref args);
         Encoders.Init();
 
