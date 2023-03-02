@@ -242,30 +242,10 @@ public class AreaWindow : Gtk.Window {
         foreach (var cm in cursor_modes) {
             if (cm.mode == mode) {
                 set_cursor_from_name(cm.name);
-                ///da.set_cursor_from_name(cm.name);
                 break;
             }
         }
     }
-
-	public void run (int mno) {
-		set_cursor_from_name("crosshair");
-		remove_css_class("background");
-		if(mno == -1) {
-			fullscreen();
-		} else {
-			var dpy = Gdk.Display.get_default();
-			var mons = dpy.get_monitors();
-			var nitems = mons.get_n_items();
-			if (mno < nitems) {
-				var monitor = (Gdk.Monitor)mons.get_item(mno);
-				fullscreen_on_monitor(monitor);
-			} else {
-				fullscreen();
-			}
-		}
-		present();
-	}
 
     private void add_corner(Gtk.Snapshot snap, float x, float y) {
         var xrect = Graphene.Rect.zero();
@@ -297,69 +277,41 @@ public class AreaWindow : Gtk.Window {
 			snap.append_color(bfill, rect);
 		}
 	}
-}
 
-#if TEST
-// valac -D TEST  --pkg gtk4  sel4xa.vala
-class SelTest : Gtk.Application {
-	private uint32 tid = 0;
-	private int monid = -1;
-
-	public SelTest() {
-        Object(application_id: "org.stronnag.seltest",
-               flags: ApplicationFlags.FLAGS_NONE);
+    private void set_bg() {
+        string css = "window {background: rgba(255, 255, 255, 0.1);}";
+        var provider = new CssProvider();
+        provider.load_from_data(css.data);
+        var stylec = get_style_context();
+        stylec.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
     }
 
-	public void setmon(int id) {
-		monid = id;
-	}
-
-    public override void activate () {
-        base.startup();
-		var window = new Gtk.ApplicationWindow(this);
-		add_window (window);
-		var sw = new AreaWindow ();
-		sw.area_set.connect((x0, y0, x1, y1) => {
-				if(tid != 0) {
-					Source.remove(tid);
-							tid = 0;
-				}
-				stderr.printf("area: %d %d %d %d\n", x0, y0, x1, y1);
-				sw.destroy();
-			});
-		sw.area_quit.connect(() => {
-				if(tid != 0) {
-					Source.remove(tid);
-					tid = 0;
-				}
-				print("ESC\n");
-				sw.destroy();
-			});
-
-		var button = new Gtk.Button.with_label("SelTest");
-		button.clicked.connect(() => {
-				sw.run(monid);
-				Timeout.add_seconds(60, () => {
-						quit();
-						return false;
-					});
-			});
-		window.child = button;
-		window.present();
+	public void run (Wayfarer.PWSession xdt, GenericArray<PortalManager.SourceInfo?> sis) {
+		set_cursor_from_name("none");
+        set_bg();
+        if(xdt == Wayfarer.PWSession.X11) {
+            fullscreen();
+        } else {
+            set_decorated(false);
+            int w =0;
+            sis.foreach((s) => {
+                    w += s.width;
+                });
+            maximize();
+            var nht = 0;
+            show.connect(() => {
+                    Timeout.add(10, () => {
+                        var ht  = get_allocated_height();
+                        if (ht == 0) {
+                            nht++;
+                            return true;
+                        }
+                        set_size_request(w,ht);
+                        set_cursor_from_name("crosshair");
+                        return false;
+                    });
+            });
+        }
+		present();
 	}
 }
-
-int main (string[] args) {
-    if (Environment.get_variable("GDK_BACKEND") == null) {
-        Environment.set_variable("GDK_BACKEND", "x11", true);
-    }
-	int mno = -1;
-    Gtk.init ();
-	if(args.length > 1)
-		mno = int.parse(args[1]);
-	var app = new SelTest();
-	app.setmon(mno);
-	app.run();
-	return 0;
-}
-#endif

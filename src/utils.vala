@@ -18,4 +18,21 @@ namespace Utils {
         var stylec = w.get_style_context();
         stylec.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
     }
+
+    public void fake_sources (ref GenericArray<PortalManager.SourceInfo?> sis) {
+        var dpy = Gdk.Display.get_default();
+        var mons = dpy.get_monitors();
+        for(var j = 0; j <mons.get_n_items(); j++) {
+            var monitor = mons.get_item(j) as Gdk.Monitor;
+            var rect = monitor.get_geometry();
+            var s = monitor.get_model();
+            PortalManager.SourceInfo si = {0};
+            si.width = rect.width;
+            si.height= rect.height;
+            si.x = rect.x;
+            si.y = rect.y;
+            si.id = s;
+            sis.add(si);
+        }
+    }
 }

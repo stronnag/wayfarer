@@ -1,14 +1,14 @@
 using Gtk;
 using Gst;
 
-public class MyApplication : Gtk.Application {
+public class Wayfarer : Gtk.Application {
     private enum PWAction {
         NONE,
         SET_AREA,
         START_RECORDING,
     }
 
-    private enum PWSession {
+    public enum PWSession {
         X11,
         WAYLAND,
     }
@@ -52,7 +52,7 @@ public class MyApplication : Gtk.Application {
         {null}
     };
 
-    public MyApplication () {
+    public Wayfarer () {
         GLib.Object(application_id: "org.stronnag.wayfarer",
                flags:ApplicationFlags.FLAGS_NONE);
     }
@@ -340,6 +340,8 @@ public class MyApplication : Gtk.Application {
                         start_recording(validaudio);
                     }
                 });
+        } else {
+            Utils.fake_sources(ref sources);
         }
 
         areabutton.clicked.connect(() => {
@@ -442,18 +444,36 @@ public class MyApplication : Gtk.Application {
 
     private void run_area_selection() {
 		if (!fullscreen.active) {
-			int mon = -1;
-			if (sources.length == 1) {
-				mon = sources[0].x / sources[0].width;
-			}
             sw = new AreaWindow ();
             sw.area_set.connect((x0, y0, x1, y1) => {
+                    var swh = sw.get_allocated_height();
+                    var offset = sources[0].height - swh;
+                    if(offset != 0){
+                        y0 += offset;
+                        y1 += offset;
+                    }
+                    if (x0 < sources[0].x) {
+                        x0 = sources[0].x;
+                    }
+                    int w =0;
+                    sources.foreach((s) => {
+                            w += s.width;
+                        });
+                    if (x1 > w) {
+                        x1 = w -1;
+                    }
+                    if (y0 < 0) {
+                        y0 = 0;
+                    }
+                    if (y1 >= sources[0].height) {
+                        y1 = sources[0].height-1;
+                    }
                     sc.set_bbox(x0, y0, x1, y1);
                     string astr = "(%d %d) (%d %d)".printf(sc.options.selinfo.x0,
                                                            sc.options.selinfo.y0,
                                                            sc.options.selinfo.x1,
                                                            sc.options.selinfo.y1);
-                    stderr.printf("dbg: %s\n", astr);
+//                    stderr.printf("dbg: %s\n", astr);
                     if (x0 != -1 && x1 != -1) {
                         have_area = 1;
                         update_status_label(astr);
@@ -469,7 +489,7 @@ public class MyApplication : Gtk.Application {
                     sw.destroy();
                     sw = null;
                 });
-            sw.run (mon);
+            sw.run (pw_session, sources);
         }
     }
 
@@ -571,7 +591,7 @@ public class MyApplication : Gtk.Application {
             stdout.printf("%s\n", WAYFARER_VERSION_STRING);
             return 0;
         }
-        MyApplication app = new MyApplication ();
+        Wayfarer app = new Wayfarer ();
         return app.run (args);
     }
 }

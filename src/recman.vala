@@ -213,6 +213,7 @@ public class ScreenCap : Object {
     }
 
 	public void set_bbox(int x0, int y0, int x1, int y1) {
+/**
 		if(x1 > x0) {
 			options.selinfo.x0 = x0;
 			options.selinfo.x1 = x1;
@@ -228,6 +229,11 @@ public class ScreenCap : Object {
 			options.selinfo.y0 = y1;
 			options.selinfo.y1 = y0;
 		}
+**/
+        options.selinfo.x0 = x0;
+        options.selinfo.x1 = x1;
+        options.selinfo.y0 = y0;
+        options.selinfo.y1 = y1;
         Utils.get_even(ref options.selinfo.x0, false);
         Utils.get_even(ref options.selinfo.x1, true);
         Utils.get_even(ref options.selinfo.y0, false);
