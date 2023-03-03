@@ -106,6 +106,10 @@ meson setup build --buildtype=release --prefix=~/.local
 ninja install -C build
 ```
 
+#### Notes
+
+Arch Linux. Prefer the embedded blueprint-compiler to the repo version. Wayfarer is in the AUR.
+
 #### Gtk3 extra dependency
 
 Appindicator is a build time Gtk3 (only) dependency; at runtime, if you have an appindicator Gnome Shell extension installed, you can use the indicator to stop recording; without such an indicator, you can use Notification, with a less good user experience.
