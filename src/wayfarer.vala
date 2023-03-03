@@ -133,9 +133,10 @@ public class Wayfarer : Gtk.Application {
                 mediasel.append(e.name, e.pname);
                 if (!mediaset) {
                     mediasel.active_id = e.name;
+                    print("initial %s\n", e.name);
                     mediaset = true;
                 }
-                if (e.pname == conf.media_type) {
+                if (e.name == conf.media_type) {
                     mediasel.active_id = conf.media_type;
                 }
             }
