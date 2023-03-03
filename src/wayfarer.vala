@@ -42,7 +42,8 @@ public class Wayfarer : Gtk.Application {
     private PWSession pw_session;
 	private int fd;
     GenericArray<PortalManager.SourceInfo?> sources;
-    private bool ctrlset;
+    private bool ctrlseta;
+    private bool ctrlsets;
     private bool stophide;
 
     public static bool show_version;
@@ -103,20 +104,29 @@ public class Wayfarer : Gtk.Application {
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
 
-        var evtk = new EventControllerKey();
-        evtk.set_propagation_phase(PropagationPhase.BUBBLE);
-        ((Gtk.Widget)window).add_controller(evtk);
+        var evtka = new GestureClick();
+        evtka.set_propagation_phase(PropagationPhase.CAPTURE);
+        evtka.set_exclusive(true);
+        ((Gtk.Widget)areabutton).add_controller(evtka);
 
-        evtk.key_pressed.connect((kv, kc, o) => {
-                if (kv == Gdk.Key.Control_L) {
-                    ctrlset = true;
+        evtka.pressed.connect((n, x, y) => {
+                var e = evtka.get_last_event(null);
+                if(e != null) {
+                    var mt = e.get_modifier_state();
+                    ctrlseta = ((mt & Gdk.ModifierType.CONTROL_MASK) != 0);
                 }
-                return true;
             });
 
-        evtk.key_released.connect((kv, kc, o) => {
-                if (kv == Gdk.Key.Control_L) {
-                    ctrlset = false;
+        var evtks = new GestureClick();
+        evtks.set_propagation_phase(PropagationPhase.CAPTURE);
+        evtks.set_exclusive(true);
+        ((Gtk.Widget)startbutton).add_controller(evtks);
+
+        evtks.pressed.connect((n, x, y) => {
+                var e = evtks.get_last_event(null);
+                if(e != null) {
+                    var mt = e.get_modifier_state();
+                    ctrlsets = ((mt & Gdk.ModifierType.CONTROL_MASK) != 0);
                 }
             });
 
@@ -263,7 +273,6 @@ public class Wayfarer : Gtk.Application {
         sc = new ScreenCap();
 
         startbutton.clicked.connect(() => {
-                stophide = ctrlset;
                 if(pw_session == PWSession.X11 || fd > 0) {
                     start_recording(validaudio);
                 } else {
@@ -406,7 +415,7 @@ public class Wayfarer : Gtk.Application {
         if (!conf.notify_stop) {
             runtimerlabel.label = "00:00";
             stopwindow.present();
-            if(stophide) {
+            if(ctrlsets) {
                 stopwindow.hide();
                 stophide = false;
             }
@@ -470,7 +479,7 @@ public class Wayfarer : Gtk.Application {
 
     private void run_area_selection() {
 		if (!fullscreen.active) {
-            if(ctrlset) {
+            if(ctrlseta) {
                 window.hide();
             }
             sw = new AreaWindow ();
