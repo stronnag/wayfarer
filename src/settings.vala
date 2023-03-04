@@ -1,15 +1,17 @@
 [Compact]
 public class Conf : Object {
     public string audio_device { get; set; }
-    public string video_dir  { get; set; }
-    public string media_type  { get; set; }
-    public string restore_token  { get; set; }
+    public string video_dir { get; set; }
+    public string media_type { get; set; }
+    public string restore_token { get; set; }
 
-    public uint32 audio_rate  { get; set; }
-    public uint32 frame_rate  { get; set; }
+    public uint32 audio_rate { get; set; }
+    public uint32 frame_rate { get; set; }
 
-    public bool notify_start  { get; set; }
-    public bool notify_stop  { get; set; }
+    public bool notify_start { get; set; }
+    public bool notify_stop { get; set; }
+
+    public bool show_hint { get; set; }
 
     private Settings s;
 
@@ -24,5 +26,6 @@ public class Conf : Object {
         s.bind("frame-rate", this, "frame-rate", SettingsBindFlags.DEFAULT);
         s.bind("notify-start", this, "notify_start", SettingsBindFlags.DEFAULT);
         s.bind("notify-stop", this, "notify_stop", SettingsBindFlags.DEFAULT);
+        s.bind("show-hint", this, "show-hint", SettingsBindFlags.DEFAULT);
     }
 }

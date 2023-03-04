@@ -40,5 +40,10 @@
       <default>false</default>
       <summary>Use notifications to stop recording</summary>
     </key>
+
+    <key name="show-hint" type="b">
+      <default>true</default>
+      <summary>Show a hint message on area selection</summary>
+    </key>
   </schema>
 </schemalist>

@@ -4,10 +4,12 @@ public class AreaWindow : Gtk.Window {
     private const  int BLOB_RADIUS=20;
     private const  int LINE_RELAX=4;
     private const float LINE_WIDTH=2.0f;
+    private const string ENDTEXT = "Save the area :\n    - Press Enter or Space, or\n    - Click Button 2 or Button 3\nQuit : Press ESCape";
 
     private enum DrawMode {
-        NONE,
-        RECT,
+        NONE = 0,
+        RECT = 1,
+        TEXT = 2,
     }
 
     private enum DragMode {
@@ -54,17 +56,22 @@ public class AreaWindow : Gtk.Window {
 	private Gdk.RGBA fill;
 	private Gdk.RGBA stroke;
 	private Gdk.RGBA bfill;
+	private Gdk.RGBA dfill;
 	public signal void area_set(int x0, int y0, int x1, int y1);
 	public signal void area_quit();
 
-    bool ingrab = false;
+    private bool show_hint;
+    private bool ingrab = false;
     private DrawMode drawmode;
     private DragMode dragmode;
 
-	public AreaWindow() {
+	public AreaWindow(bool _show_hint) {
+        show_hint = _show_hint;
 		fill = Gdk.RGBA(){red = 1.0f, green = 1.0f, blue = 1.0f, alpha= 0.2f};
 		stroke = Gdk.RGBA(){red = 1.0f, green = 1.0f, blue = 1.0f, alpha = 0.5f};
 		bfill = Gdk.RGBA(){red = 1.0f, green = 1.0f, blue = 1.0f, alpha = 0.8f};
+		dfill = Gdk.RGBA(){red = 0.0f, green = 0.0f, blue = 0.0f, alpha= 0.5f};
+
         title = "Wayfarer";
         drawmode = DrawMode.NONE;
         dragmode = DragMode.FREE;
@@ -135,6 +142,8 @@ public class AreaWindow : Gtk.Window {
                 if (dragmode == DragMode.GRAB) {
                     dragmode = set_cursor_mode(absx, absy);
                 }
+                drawmode = DrawMode.TEXT;
+                queue_draw();
             });
 
         gestd.drag_update.connect((x,y) => {
@@ -257,25 +266,64 @@ public class AreaWindow : Gtk.Window {
         snap.pop();
     }
 
+    private void show_message(Gtk.Snapshot snap) {
+        var width = ((endx-spx)*9)/10;
+        var height = ((endy - spy)*9)/10;
+        var font = new Pango.FontDescription();
+        font.set_family("Sans");
+        var fsize = 20 * Pango.SCALE;
+        var context = this.get_pango_context();
+        var layout = new Pango.Layout(context);
+        font.set_size(fsize);
+        layout.set_font_description(font);
+        layout.set_text(ENDTEXT, -1);
+        int lwidth;
+        int lheight;
+        layout.get_pixel_size(out lwidth, out lheight);
+        var fw = fsize * width / lwidth;
+        var fh = fsize * height / lheight ;
+        fsize = (fw < fh) ? fw : fh;
+        font.set_size(fsize);
+        layout.set_font_description(font);
+        layout.set_text(ENDTEXT, -1);
+        layout.get_pixel_size(out lwidth, out lheight);
+        var point = Graphene.Point();
+        point.x = spx + (endx-spx)/20;
+        var bh = (endy- spy);
+        point.y = spy + (endy-spy)/20 + (bh-lheight)/2;
+        snap.save();
+        snap.translate(point);
+        snap.append_layout(layout, bfill);
+        snap.restore();
+    }
+
 	public override void snapshot (Gtk.Snapshot snap) {
-        if (drawmode == DrawMode.RECT) {
+        if (drawmode == DrawMode.NONE) {
+            var rect = Graphene.Rect.zero();
+			snap.append_color(bfill, rect);
+		} else {
 			float[] lwidths = {LINE_WIDTH, LINE_WIDTH, LINE_WIDTH, LINE_WIDTH};
 			Gdk.RGBA[] lcols = {stroke, stroke, stroke, stroke};
-
 			var rect = Graphene.Rect.zero();
             var rrect = Gsk.RoundedRect(){};
 			rect.init(spx, spy, endx-spx, endy-spy);
 			rrect.init_from_rect(rect, 0.0f);
-			snap.append_color(fill, rect);
+            if (drawmode == DrawMode.TEXT) {
+                snap.append_color(dfill, rect);
+            } else {
+                snap.append_color(fill, rect);
+            }
 			snap.append_border(rrect, lwidths, lcols);
             add_corner(snap, spx, spy);
             add_corner(snap, endx, spy);
             add_corner(snap, endx, endy);
             add_corner(snap, spx, endy);
-        } else {
-			var rect = Graphene.Rect.zero();
-			snap.append_color(bfill, rect);
-		}
+            if (drawmode == DrawMode.TEXT) {
+                if(show_hint) {
+                    show_message(snap);
+                }
+            }
+        }
 	}
 
     private void set_bg() {

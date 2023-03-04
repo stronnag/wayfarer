@@ -101,6 +101,7 @@ public class Wayfarer : Gtk.Application {
         Gtk.Button prefapply = builder.get_object("prefsapply") as Button;
         CheckButton prefs_not =  builder.get_object("prefs_not") as CheckButton;
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
+        CheckButton prefs_hint =  builder.get_object("prefs_hint") as CheckButton;
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
 		mediasel = builder.get_object("media_sel") as ComboBoxText;
 
@@ -193,6 +194,7 @@ public class Wayfarer : Gtk.Application {
         prefapply.clicked.connect(() => {
                 conf.notify_start = prefs_not.active;
                 conf.notify_stop = prefs_notall.active;
+                conf.show_hint = prefs_hint.active;
 				conf.audio_rate = int.parse(prefs_audiorate.text);
                 prefs.hide();
             });
@@ -331,6 +333,7 @@ public class Wayfarer : Gtk.Application {
 
         prefs_not.active = conf.notify_start;
         prefs_notall.active = conf.notify_stop;
+        prefs_hint.active = conf.show_hint;
 
         audiosource.changed.connect(() => {
                 conf.audio_device = audiosource.active_id;
@@ -482,7 +485,7 @@ public class Wayfarer : Gtk.Application {
             if(ctrlseta) {
                 window.hide();
             }
-            sw = new AreaWindow ();
+            sw = new AreaWindow (conf.show_hint);
             sw.area_set.connect((x0, y0, x1, y1) => {
                     var swh = sw.get_allocated_height();
                     var offset = sources[0].height - swh;
