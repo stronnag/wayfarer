@@ -20,7 +20,7 @@ configure_file(
   output : 'wayfarer-config.h',
   configuration : conf_data
 )
-configuration_inc = include_directories('build')
+configuration_inc = include_directories('.')
 
 subdir('src')
 subdir('data')
