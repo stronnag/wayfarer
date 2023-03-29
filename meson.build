@@ -1,4 +1,8 @@
-project('wayfarer', 'vala', 'c', version : '1.1.0')
+project('wayfarer', 'vala', 'c', version : '1.1.1')
+
+# For now, as some replacements are not  well defined.
+add_project_arguments('-Wno-deprecated-declarations', language : 'c')
+add_project_arguments('--enable-deprecated', language : 'vala')
 
 conf_data = configuration_data()
 conf_data.set_quoted('version', meson.project_version())
