@@ -568,6 +568,7 @@ public class Wayfarer : Gtk.Application {
     }
 
     private void set_start_active(bool act) {
+		Utils.setup_css(startbutton, act);
         startbutton.sensitive = act;
         startbutton.set_name((act) ? "record" : "GtkButton");
     }
@@ -595,7 +596,9 @@ public class Wayfarer : Gtk.Application {
 		stderr.printf("*DBG* close FD %d\n", fd);
 		Posix.close(fd);
 		fd = -1;
-		startbutton.sensitive = false;
+		//startbutton.sensitive = false;
+		set_start_active(false);
+
     }
 
     private void clean_up() {

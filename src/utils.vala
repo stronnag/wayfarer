@@ -1,6 +1,7 @@
 namespace Utils {
     private const string CSSSTR="#record { background:  @theme_selected_bg_color;}";
     // background-color: @accent_bg_color; }";
+    private const string UCSSSTR="#record { background:  @theme_normal_bg_color;}";
 
 	public void get_even(ref int v, bool up = false) {
         if (up)
@@ -12,12 +13,13 @@ namespace Utils {
         return 1+get_num_processors()/2;
     }
 
-    public void setup_css(Gtk.Widget w) {
+    public void setup_css(Gtk.Widget w, bool on = true) {
+		string str = (on) ? CSSSTR : UCSSSTR;
         var provider = new Gtk.CssProvider ();
 #if CSS_USE_LOAD_DATA
-        provider.load_from_data(CSSSTR,-1);
+        provider.load_from_data(str,-1);
 #else
-        provider.load_from_string(CSSSTR);
+        provider.load_from_string(str);
 #endif
         var stylec = w.get_style_context();
         stylec.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
