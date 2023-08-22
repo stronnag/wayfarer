@@ -203,9 +203,10 @@ public class ScreenCap : Object {
     }
 
     public void post_process(bool forced = false) {
+		stderr.printf("*DBG* Post state %s forced=%s\n", astate.to_string(), forced.to_string());
         if (astate != STATE.None) {
             mediarec.stop_recording();
-            if (forced) {
+            if (true) {
                 mediarec.force_quit();
             }
         }
