@@ -275,9 +275,11 @@ public class Wayfarer : Gtk.Application {
         sc = new ScreenCap();
 
         startbutton.clicked.connect(() => {
-                if(pw_session == PWSession.X11 || fd > 0) {
+				stderr.printf("*DBG* Start with %s %d\n", pw_session.to_string(), fd);
+				if(pw_session == PWSession.X11 || fd > 0) {
                     start_recording(validaudio);
                 } else {
+					stderr.printf("*DBG* Need acquire %d\n", fd);
                     pw_action = START_RECORDING;
                     pw.acquire(mouserecord.active);
                 }
@@ -584,13 +586,16 @@ public class Wayfarer : Gtk.Application {
         window.show();
         sc.post_process(forced);
         if (forced) {
-//            startbutton.sensitive = false;
         } else {
             if(pw_session == PWSession.WAYLAND && pw_result == PortalManager.Result.OK) {
-                pw.close();
-                fd = -1;
+				stderr.printf("*DBG* pw.close\n");
+				pw.close();
             }
         }
+		stderr.printf("*DBG* close FD %d\n", fd);
+		Posix.close(fd);
+		fd = -1;
+		startbutton.sensitive = false;
     }
 
     private void clean_up() {

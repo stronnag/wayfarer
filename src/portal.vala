@@ -274,6 +274,7 @@ public class PortalManager : Object {
                                                     out fdl);
 
             var fdindex = res.get_child_value(0).get_handle();
+			stderr.printf("*DBG* fdlist %d\n", fdl.get_length());
             fd = fdl.get(fdindex);
         } catch (Error e) {
             stderr.printf("Remote fd failed %s\n", e.message);
