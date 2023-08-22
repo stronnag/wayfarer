@@ -329,7 +329,7 @@ public class AreaWindow : Gtk.Window {
     private void set_bg() {
         string css = "window {background: rgba(255, 255, 255, 0.1);}";
         var provider = new CssProvider();
-        provider.load_from_data(css.data);
+        provider.load_from_string(css);
         var stylec = get_style_context();
         stylec.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
     }

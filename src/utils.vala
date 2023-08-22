@@ -14,7 +14,7 @@ namespace Utils {
 
     public void setup_css(Gtk.Widget w) {
         var provider = new Gtk.CssProvider ();
-        provider.load_from_data(CSSSTR.data);
+        provider.load_from_string(CSSSTR);
         var stylec = w.get_style_context();
         stylec.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
     }
