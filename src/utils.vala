@@ -17,7 +17,7 @@ namespace Utils {
 		string str = (on) ? CSSSTR : UCSSSTR;
         var provider = new Gtk.CssProvider ();
 #if CSS_USE_LOAD_DATA
-        provider.load_from_data(str,-1);
+        provider.load_from_data(str.data);
 #else
         provider.load_from_string(str);
 #endif
