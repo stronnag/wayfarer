@@ -16,14 +16,20 @@ namespace Utils {
     public void setup_css(Gtk.Widget w, bool on = true) {
 		string str = (on) ? CSSSTR : UCSSSTR;
         var provider = new Gtk.CssProvider ();
-#if CSS_USE_LOAD_DATA
-        provider.load_from_data(str.data);
-#else
-        provider.load_from_string(str);
-#endif
+		load_provider_string(ref provider, str);
         var stylec = w.get_style_context();
         stylec.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
     }
+
+	public void load_provider_string(ref Gtk.CssProvider provider, string str) {
+#if CSS_USE_LOAD_DATA
+        provider.load_from_data(str.data);
+#elif CSS_USE_LOAD_DATA_STR_LEN
+        provider.load_from_data(str, -1);
+#else
+        provider.load_from_string(str);
+#endif
+	}
 
     public void fake_sources (ref GenericArray<PortalManager.SourceInfo?> sis) {
         var dpy = Gdk.Display.get_default();

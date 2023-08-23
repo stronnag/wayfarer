@@ -31,21 +31,12 @@ configure_file(
 )
 configuration_inc = include_directories('.')
 
+vopts=[]
 subdir('src')
 subdir('data')
+subdir('meson')
 
 dependency('glib-2.0', version: '>=2.30', required: true)
-
-
-vopts=[]
-r = run_command('pkg-config', '--modversion', 'gtk4',  check: true)
-if r.returncode() != 0
-  error('failed to get champlain version')
-endif
-gtkvers = r.stdout().strip()
-if gtkvers.version_compare('<4.12.0')
-  vopts += '--define=CSS_USE_LOAD_DATA'
-endif
 
 executable(
     meson.project_name(),
