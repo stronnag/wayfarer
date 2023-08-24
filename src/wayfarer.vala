@@ -597,8 +597,9 @@ public class Wayfarer : Gtk.Application {
 		Posix.close(fd);
 		fd = -1;
 		//startbutton.sensitive = false;
+		have_area = 0;
 		set_start_active(false);
-
+		update_status_label();
     }
 
     private void clean_up() {
