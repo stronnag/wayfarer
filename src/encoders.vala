@@ -145,7 +145,7 @@ class Encoders {
 
     public static EProfile? find(string name) {
         foreach (var e in get_all()) {
-            if (e.name == name) {
+            if (e.name == name || e.pname == name) {
                 return e;
             }
         }

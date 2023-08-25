@@ -27,11 +27,11 @@ public class Wayfarer : Gtk.Application {
     private Gtk.Label statuslabel;
 	private PortalManager pw;
 	private Button dirchooser;
-	private ComboBoxText mediasel;
+	private DropDown mediasel;
 	private Window stopwindow;
     private Gtk.Label runtimerlabel;
     private Gtk.SpinButton framerate;
-    private ComboBoxText audiosource;
+    private DropDown audiosource;
     private CheckButton audiorecord;
     private CheckButton mouserecord;
     private SpinButton delayspin;
@@ -47,6 +47,8 @@ public class Wayfarer : Gtk.Application {
     private bool stophide;
 
     public static bool show_version;
+
+	private ScreenCap.AudioSource[] audios;
 
 	private AreaWindow sw;
 
@@ -68,7 +70,7 @@ public class Wayfarer : Gtk.Application {
 	}
 
     private void present_window() {
-        bool validaudio = false;
+        uint validaudio = Gtk.INVALID_LIST_POSITION;
         var builder = new Builder.from_resource("/org/stronnag/wayfarer/wayfarer.ui");
         window = builder.get_object ("window") as Gtk.ApplicationWindow;
         this.add_window (window);
@@ -87,7 +89,7 @@ public class Wayfarer : Gtk.Application {
 
         dirchooser = builder.get_object("dirchooser") as Button;
 		var dirlabel = builder.get_object("dirlabel") as Label;
-        audiosource = builder.get_object("audiosource") as ComboBoxText;
+        audiosource = builder.get_object("audiosource") as DropDown;
         audiorecord =  builder.get_object("audiorecord") as CheckButton;
         mouserecord =  builder.get_object("mouserecord") as CheckButton;
         framerate = builder.get_object("framerate") as SpinButton;
@@ -97,13 +99,13 @@ public class Wayfarer : Gtk.Application {
         Gtk.Button areabutton = builder.get_object("areabutton") as Button;
 
         Gtk.AboutDialog about = builder.get_object ("wayfarerabout") as Gtk.AboutDialog;
-        Gtk.Dialog prefs = builder.get_object ("wayfarerprefs") as Gtk.Dialog;
+        Gtk.Window prefs = builder.get_object ("wayfarerprefs") as Gtk.Window;
         Gtk.Button prefapply = builder.get_object("prefsapply") as Button;
         CheckButton prefs_not =  builder.get_object("prefs_not") as CheckButton;
         CheckButton prefs_notall =  builder.get_object("prefs_notall") as CheckButton;
         CheckButton prefs_hint =  builder.get_object("prefs_hint") as CheckButton;
 		Gtk.Entry prefs_audiorate = builder.get_object("prefs_audiorate") as Entry;
-		mediasel = builder.get_object("media_sel") as ComboBoxText;
+		mediasel = builder.get_object("media_sel") as DropDown;
 
         var evtka = new GestureClick();
         evtka.set_propagation_phase(PropagationPhase.CAPTURE);
@@ -138,18 +140,23 @@ public class Wayfarer : Gtk.Application {
 
         conf = new Conf();
 
-        bool mediaset = false;
+        uint mediaset = Gtk.INVALID_LIST_POSITION;
+		StringList sl = new StringList(null);
+
+		mediasel.model = sl;
+		int n = 0;
         foreach (var e in Encoders.list_profiles()) {
             if (e.is_valid) {
-                mediasel.append(e.name, e.pname);
-                if (!mediaset) {
-                    mediasel.active_id = e.name;
+                sl.append(e.pname);
+                if (mediaset == Gtk.INVALID_LIST_POSITION) {
+                    mediasel.selected = n;
                     print("initial %s\n", e.name);
-                    mediaset = true;
+                    mediaset = n;
                 }
                 if (e.name == conf.media_type) {
-                    mediasel.active_id = conf.media_type;
+                    mediasel.selected = n;
                 }
+				n++;
             }
         }
 
@@ -177,9 +184,8 @@ public class Wayfarer : Gtk.Application {
 
 		prefs.set_transient_for(window);
 		prefs.modal = true;
-		var pbox = prefs.get_content_area();
 		var pstuff = builder.get_object ("prefsstuff") as Gtk.Box;
-		pbox.append(pstuff);
+		prefs.set_child(pstuff);
 
         about.close_request.connect (() => {
                 about.hide();
@@ -200,26 +206,11 @@ public class Wayfarer : Gtk.Application {
             });
 
 		dirchooser.clicked.connect(() => {
-				Gtk.FileChooserDialog fc = new Gtk.FileChooserDialog (
-					"Video Directory",
-					active_window, Gtk.FileChooserAction.SELECT_FOLDER,
-					"_Cancel",
-					Gtk.ResponseType.CANCEL,
-					"_Select",
-					Gtk.ResponseType.ACCEPT);
+				Utils.get_video_directory.begin(conf.video_dir, (o,r) => {
+						conf.video_dir  = Utils.get_video_directory.end(r);
+						dirlabel.label = Path.get_basename(conf.video_dir);
 
-				try {
-					fc.set_current_folder(File.new_for_path(conf.video_dir));
-				} catch {}
-
-				fc.response.connect((result) => {
-						if (result== Gtk.ResponseType.ACCEPT) {
-							conf.video_dir = fc.get_file().get_path ();
-							dirlabel.label = Path.get_basename(conf.video_dir);
-						}
-						fc.close();
 					});
-				fc.present();
 			});
 
         var saq = new GLib.SimpleAction("quit",null);
@@ -230,7 +221,7 @@ public class Wayfarer : Gtk.Application {
 
         saq = new GLib.SimpleAction("prefs",null);
         saq.activate.connect(() => {
-                prefs.show();
+                prefs.present();
             });
         window.add_action(saq);
 
@@ -290,27 +281,31 @@ public class Wayfarer : Gtk.Application {
 				statuslabel.label = s;
 			});
 
-        var at = sc.get_audio_sources();
-        foreach (var a in at) {
-            audiosource.append(a.device,a.desc);
+        audios = sc.get_audio_sources();
+		StringList asl = new StringList(null);
+
+		audiosource.model = asl;
+		foreach (var a in audios) {
+            asl.append(a.desc);
         }
 
-        if(at.length == 0) {
+        if(audios.length == 0) {
             stderr.puts("No audio sources found\n");
-            validaudio = false;
         } else {
             if(conf.audio_device.length > 4) {
-                foreach(var a in at) {
-                    if (a.device == conf.audio_device) {
-                        audiosource.active_id = conf.audio_device;
-                        validaudio = true;
+				int na = 0;
+				foreach(var a in audios) {
+                    if (a.desc == conf.audio_device) {
+                        audiosource.selected = na;
+                        validaudio = na;
                         break;
                     }
+					na++;
                 }
             }
-            if (!validaudio) {
-                audiosource.active_id = at[0].device;
-                validaudio = true;
+            if (validaudio == Gtk.INVALID_LIST_POSITION) {
+                audiosource.selected = 0;
+                validaudio = 0;
             }
         }
 
@@ -336,10 +331,6 @@ public class Wayfarer : Gtk.Application {
         prefs_not.active = conf.notify_start;
         prefs_notall.active = conf.notify_stop;
         prefs_hint.active = conf.show_hint;
-
-        audiosource.changed.connect(() => {
-                conf.audio_device = audiosource.active_id;
-            });
 
         sources = new GenericArray<PortalManager.SourceInfo?>();
 
@@ -397,18 +388,24 @@ public class Wayfarer : Gtk.Application {
         window.show ();
     }
 
-    private void start_recording(bool validaudio) {
-        sc.options.capaudio = (validaudio)  ? audiorecord.active : false;
+    private void start_recording(uint validaudio) {
+        sc.options.capaudio = (validaudio == Gtk.INVALID_LIST_POSITION)  ? false : audiorecord.active;
         sc.options.capmouse = mouserecord.active;
         conf.frame_rate = framerate.get_value_as_int();
         sc.options.framerate = (int)conf.frame_rate;
         sc.options.audiorate = (int)conf.audio_rate;
-        sc.options.adevice = (validaudio) ? audiosource.active_id : null;
+
+		uint na = audiosource.selected;
+		conf.audio_device = audios[na].device;
+		sc.options.adevice = (sc.options.capaudio) ? conf.audio_device : null;
         sc.options.fd = fd;
-        sc.options.mediatype = mediasel.active_id;
         sc.options.fullscreen = fullscreen.active;
         sc.options.dirname = conf.video_dir;
-        if (conf.video_dir.length > 0) {
+
+		uint nm = mediasel.selected;
+        sc.options.mediatype = Encoders.get_all()[nm].name;
+
+		if (conf.video_dir.length > 0) {
             try {
                 var file = File.new_for_path(conf.video_dir);
                 file.make_directory_with_parents();
@@ -489,7 +486,7 @@ public class Wayfarer : Gtk.Application {
             }
             sw = new AreaWindow (conf.show_hint);
             sw.area_set.connect((x0, y0, x1, y1) => {
-                    var swh = sw.get_allocated_height();
+                    var swh = sw.get_height();
                     var offset = sources[0].height - swh;
                     if(offset != 0){
                         y0 += offset;
@@ -551,7 +548,7 @@ public class Wayfarer : Gtk.Application {
 		if (!fullscreen.active) {
 			switch(have_area) {
 			case 0:
-				sb.append("Set area or window");
+				sb.append("Set area or select full screen");
 				break;
 			case 1:
 				sb.append_printf("Area: %s", astr);
@@ -568,9 +565,8 @@ public class Wayfarer : Gtk.Application {
     }
 
     private void set_start_active(bool act) {
-		Utils.setup_css(startbutton, act);
+		startbutton.set_name((act) ? "recsel" : "recdef");
         startbutton.sensitive = act;
-        startbutton.set_name((act) ? "record" : "GtkButton");
     }
 
     private void do_stop_action(bool forced = false) {
@@ -596,15 +592,22 @@ public class Wayfarer : Gtk.Application {
 		stderr.printf("*DBG* close FD %d\n", fd);
 		Posix.close(fd);
 		fd = -1;
-		//startbutton.sensitive = false;
 		have_area = 0;
 		set_start_active(false);
 		update_status_label();
     }
 
     private void clean_up() {
-		conf.media_type = mediasel.active_id;
-        save_config();
+		uint nm =mediasel.selected;
+		if (nm != Gtk.INVALID_LIST_POSITION) {
+			var str = Encoders.get_all()[nm].name;
+			conf.media_type = str;
+		}
+		uint na = audiosource.selected;
+		if (nm != Gtk.INVALID_LIST_POSITION) {
+			conf.audio_device = audios[na].desc;
+		}
+		save_config();
         quit();
     }
 
