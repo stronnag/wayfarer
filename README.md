@@ -91,6 +91,10 @@ Preferences are stored as `GSettings` under the schema `org.stronnag.wayfarer`. 
 
 ## Building
 
+### Arch Linux
+
+Arch Linux. Wayfarer is in the AUR [wayfarer-git](https://aur.archlinux.org/packages/wayfarer-git).
+
 ### General
 
 Other requirements:
@@ -105,10 +109,6 @@ meson setup build --buildtype=release --prefix=~/.local
 # then
 ninja install -C build
 ```
-
-#### Notes
-
-Arch Linux. Prefer the embedded blueprint-compiler to the repo version. Wayfarer is in the AUR.
 
 #### Gtk3 extra dependency
 
