@@ -9,6 +9,10 @@ if show_deprecated  == false
   add_project_arguments('--enable-deprecated', language : 'vala')
 endif
 
+if meson.get_compiler('c').get_id() == 'clang'
+  add_global_arguments('-Wno-error=incompatible-function-pointer-types', language : 'c')
+endif
+
 conf_data = configuration_data()
 conf_data.set_quoted('version', meson.project_version())
 app = 'wayfarer'
