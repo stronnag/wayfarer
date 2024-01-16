@@ -45,6 +45,7 @@ public class Wayfarer : Gtk.Application {
     private bool ctrlseta;
     private bool ctrlsets;
     private bool stophide;
+	private bool forced;
 
     public static bool show_version;
 
@@ -264,8 +265,12 @@ public class Wayfarer : Gtk.Application {
         window.set_icon_name("wayfarer");
 
         sc = new ScreenCap();
+		sc.stream_ended.connect(() => {
+				cleanup_session();
+			});
 
         startbutton.clicked.connect(() => {
+				forced = false;
 				stderr.printf("*DBG* Start with %s %d\n", pw_session.to_string(), fd);
 				if(pw_session == PWSession.X11 || fd > 0) {
                     start_recording(validaudio);
@@ -279,6 +284,9 @@ public class Wayfarer : Gtk.Application {
 		sc.report_gst_error.connect((s) => {
 				do_stop_action();
 				statuslabel.label = s;
+				if(forced) {
+					cleanup_session();
+				}
 			});
 
         audios = sc.get_audio_sources();
@@ -338,11 +346,8 @@ public class Wayfarer : Gtk.Application {
             pw = new PortalManager(conf.restore_token);
             pw.closed.connect(() => {
                     stderr.printf("Portal cancelled / closed remotely [%d]\n", fd);
-                    if(fd > 0) {
-                        Posix.close(fd);
-                        fd = -1;
-                        do_stop_action(true);
-                    }
+					forced = true;
+					do_stop_action();
                 });
 
             pw.completed.connect((result) => {
@@ -569,7 +574,7 @@ public class Wayfarer : Gtk.Application {
         startbutton.sensitive = act;
     }
 
-    private void do_stop_action(bool forced = false) {
+    private void do_stop_action() {
         if(timerid > 0) {
             Source.remove(timerid);
             timerid = 0;
@@ -581,23 +586,31 @@ public class Wayfarer : Gtk.Application {
         nt.close_last();
 		stopwindow.hide();
         window.show();
-        sc.post_process(forced);
-        if (forced) {
-        } else {
-            if(pw_session == PWSession.WAYLAND && pw_result == PortalManager.Result.OK) {
-				stderr.printf("*DBG* pw.close\n");
-				pw.close();
-            }
-        }
-		stderr.printf("*DBG* close FD %d\n", fd);
-		Posix.close(fd);
-		fd = -1;
+        sc.post_process();
+    }
+
+
+	private void cleanup_session() {
+		if(pw_session == PWSession.WAYLAND && pw_result == PortalManager.Result.OK) {
+			stderr.printf("*DBG* pw.close\n");
+			pw.close();
+		}
+		if(fd != -1) {
+			stderr.printf("*DBG* close FD %d\n", fd);
+			Posix.close(fd);
+			fd = -1;
+		}
 		have_area = 0;
 		set_start_active(false);
 		update_status_label();
-    }
+		if(forced && sc.options.mediatype == "mp4") {
+			stderr.printf("delete %s on forced close\n", filename);
+			statuslabel.label = "mp4 file deleted on forced close";
+			Posix.unlink(filename);
+		}
+	}
 
-    private void clean_up() {
+	private void clean_up() {
 		uint nm =mediasel.selected;
 		if (nm != Gtk.INVALID_LIST_POSITION) {
 			var str = Encoders.get_all()[nm].name;

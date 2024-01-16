@@ -39,7 +39,7 @@ class Encoders {
                 {"x264enc",
                  {{"profile", "baseline"}},
                  {{"qp-max", 17},
-                  {"speed-preset", "super-fast"},
+				  {"speed-preset", "superfast"},
                   {"threads", Utils.preferred_threads()}},
                 },
                 {"opusenc", {}, {}},
