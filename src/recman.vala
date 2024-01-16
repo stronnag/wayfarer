@@ -36,6 +36,7 @@ public class ScreenCap : Object {
     public Options options;
 
 	public signal void report_gst_error(string s);
+	public signal void stream_ended();
 
     STATE astate = STATE.None;
 
@@ -44,6 +45,10 @@ public class ScreenCap : Object {
         mediarec = new MediaRecorder();
 		mediarec.report_gst_error.connect((s) => {
 				report_gst_error(s);
+			});
+		mediarec.stream_ended.connect (() => {
+				stderr.printf("End of stream!!!\n");
+				stream_ended();
 			});
 	}
 
@@ -202,16 +207,17 @@ public class ScreenCap : Object {
         return at;
     }
 
-    public void post_process(bool forced = false) {
-		stderr.printf("*DBG* Post state %s forced=%s\n", astate.to_string(), forced.to_string());
+    public void post_process() {
         if (astate != STATE.None) {
+			stderr.printf("*DBG* Post state %s\n", astate.to_string());
             mediarec.stop_recording();
-            if (true) {
-                mediarec.force_quit();
-            }
         }
         astate = STATE.None;
     }
+
+	public void force_stop() {
+		mediarec.force_quit();
+	}
 
 	public void set_bbox(int x0, int y0, int x1, int y1) {
 /**
