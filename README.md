@@ -11,7 +11,7 @@
 
 In X11 mode, it may support other desktops (untested); in Wayland mode, other desktops are not supported (but may "work").
 
-Requires:
+Requires the following (development) packages:
 
 * Gtk 4
 * Vala
