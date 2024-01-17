@@ -11,7 +11,7 @@
 
 In X11 mode, it may support other desktops (untested); in Wayland mode, other desktops are not supported (but may "work").
 
-Requires:
+Requires the following (development) packages:
 
 * Gtk 4
 * Vala
@@ -108,7 +108,7 @@ ninja install -C build
 
 #### Notes
 
-Arch Linux. Prefer the embedded blueprint-compiler to the repo version. Wayfarer is in the AUR.
+Arch Linux: Wayfarer is in the [AUR](https://aur.archlinux.org/packages/wayfarer-git).
 
 #### Gtk3 extra dependency
 
