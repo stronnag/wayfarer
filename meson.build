@@ -1,4 +1,4 @@
-project('wayfarer', 'vala', 'c', version : '1.2.1')
+project('wayfarer', 'vala', 'c', version : '1.2.2')
 
 # For now, as some replacements are not  well defined.
 

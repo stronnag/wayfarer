@@ -11,7 +11,7 @@
 
 In X11 mode, it may support other desktops (untested); in Wayland mode, other desktops are not supported (but may "work").
 
-Requires:
+Requires the following (development) packages:
 
 * Gtk 4
 * Vala
@@ -126,3 +126,11 @@ Licence : GPL v3 or later
 (c) Jonathan Hudson 2021-2023
 
 Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the other developer's pain with the ever moving targets of Gnome, Wayland, Pipewire and XDG Portal, particularly `kooha`'s guidance on the workings of GStreamer has been extremely useful.
+
+### Bug reports
+
+Please provide the `stderr` information (run wayfarer from a terminal).
+Bug reports should provide:
+
+* Operating system and version
+* Details of window manger / desktop environment

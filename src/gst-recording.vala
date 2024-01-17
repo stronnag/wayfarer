@@ -9,6 +9,7 @@ public class MediaRecorder : GLib.Object {
     private State state;
     private Pipeline pipeline;
 	public signal void report_gst_error(string s);
+	public signal void stream_ended();
 
     public MediaRecorder() {
         state = State.NONE;
@@ -65,6 +66,7 @@ public class MediaRecorder : GLib.Object {
 					pipeline.set_state (Gst.State.NULL);
 					b.remove_watch();
 					bus = null;
+					stream_ended();
 					return false;
 				default:
 				    break;
