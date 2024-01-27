@@ -48,12 +48,14 @@ public class Wayfarer : Gtk.Application {
 	private bool forced;
 
     public static bool show_version;
+    public static bool two_is_one;
 
 	private ScreenCap.AudioSource[] audios;
 
 	private AreaWindow sw;
 
     const OptionEntry[] options = {
+        { "my-portal-is-broken", 0, 0, OptionArg.NONE, out two_is_one, "workaround broken portal", null},
         { "version", 'v', 0, OptionArg.NONE, out show_version, "show version", null},
         {null}
     };
@@ -358,7 +360,7 @@ public class Wayfarer : Gtk.Application {
                             if (ci.fd > -1  && ci.sources.length > 0 ) {
                                 fd = ci.fd;
                                 sources = ci.sources;
-                                if (sources[0].source_type == 1 || sources[0].source_type == 0) {
+                                if (sources[0].source_type == 1 || sources[0].source_type == 0 || (two_is_one && sources[0].source_type == 2)) {
                                     run_area_selection();
                                 } else {
                                     have_area = 2;

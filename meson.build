@@ -1,4 +1,4 @@
-project('wayfarer', 'vala', 'c', version : '1.3.1')
+project('wayfarer', 'vala', 'c', version : '1.3.2')
 
 # For now, as some replacements are not  well defined.
 
@@ -47,7 +47,7 @@ executable(
     wresources,
     wguisrcs,
     dependencies: [
-      dependency('gtk4'),
+      dependency('gtk4', version: '>=4.12'),
       dependency('gio-2.0'),
       dependency('gstreamer-1.0'),
       dependency('gstreamer-pbutils-1.0'),
