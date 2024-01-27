@@ -2,9 +2,9 @@
 
 ## Features and limitations
 
-**wayfarer** is a screen recorder for GNOME
+**wayfarer** is a screen recorder for **GNOME**
 
-* Modern GNOME desktop (Arch, Fedora, Debian Testing, Ubuntu 22.04)
+* Modern **GNOME desktop** (Arch, Fedora, Debian Testing, Ubuntu 22.04)
 * Wayland or Xorg
 * Pipewire / Pulseaudio / libportal (XDG Desktop Portal)
 * Wireplumber recommended
@@ -130,7 +130,7 @@ Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**
 ### Bug reports
 
 Please provide the `stderr` information (run wayfarer from a terminal).
-Bug reports should provide:
+Bug reports should also provide:
 
 * Operating system and version
-* Details of window manger / desktop environment
+* Details of window manger / desktop environment / GPU
