@@ -2,9 +2,9 @@
 
 ## Features and limitations
 
-**wayfarer** is a screen recorder for GNOME
+**wayfarer** is a screen recorder for **GNOME**
 
-* Modern GNOME desktop (Arch, Fedora, Debian Testing, Ubuntu 22.04)
+* Modern **GNOME desktop** (Arch, Fedora, Debian Testing, Ubuntu 22.04)
 * Wayland or Xorg
 * Pipewire / Pulseaudio / libportal (XDG Desktop Portal)
 * Wireplumber recommended
@@ -91,6 +91,10 @@ Preferences are stored as `GSettings` under the schema `org.stronnag.wayfarer`. 
 
 ## Building
 
+### Arch Linux
+
+Arch Linux. Wayfarer is in the AUR [wayfarer-git](https://aur.archlinux.org/packages/wayfarer-git).
+
 ### General
 
 Other requirements:
@@ -105,10 +109,6 @@ meson setup build --buildtype=release --prefix=~/.local
 # then
 ninja install -C build
 ```
-
-#### Notes
-
-Arch Linux: Wayfarer is in the [AUR](https://aur.archlinux.org/packages/wayfarer-git).
 
 #### Gtk3 extra dependency
 
@@ -130,7 +130,7 @@ Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**
 ### Bug reports
 
 Please provide the `stderr` information (run wayfarer from a terminal).
-Bug reports should provide:
+Bug reports should also provide:
 
 * Operating system and version
-* Details of window manger / desktop environment
+* Details of window manger / desktop environment / GPU
