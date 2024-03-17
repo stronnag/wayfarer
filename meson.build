@@ -58,7 +58,7 @@ executable(
       meson.get_compiler('c').find_library('m'),
     ],
     vala_args : vopts,
-    c_args : vcopts,
+    c_args : vcargs,
     sources: wayvers_h,
     include_directories : configuration_inc,
     install: true,
@@ -67,7 +67,7 @@ executable(
 executable(
   'wayfarer-convert-to-schema',
   convsrc,
-  c_args : vcopts,
+  c_args : vcargs,
   dependencies: [
 	dependency('gio-2.0'),
         meson.get_compiler('vala').find_library('posix'),
