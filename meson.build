@@ -1,4 +1,4 @@
-project('wayfarer', 'vala', 'c', version : '1.2.2')
+project('wayfarer', 'vala', 'c', version : '1.2.3')
 
 # For now, as some replacements are not  well defined.
 
@@ -32,6 +32,7 @@ configure_file(
 configuration_inc = include_directories('.')
 
 vopts=[]
+subdir('valaopts')
 subdir('src')
 subdir('data')
 subdir('meson')
@@ -53,6 +54,7 @@ executable(
       meson.get_compiler('c').find_library('m'),
     ],
     vala_args : vopts,
+    c_args: vcargs,
     sources: wayvers_h,
     include_directories : configuration_inc,
     install: true,
@@ -61,6 +63,7 @@ executable(
 executable(
   'wayfarer-convert-to-schema',
   convsrc,
+  c_args: vcargs,
   dependencies: [
 	dependency('gio-2.0'),
         meson.get_compiler('vala').find_library('posix'),
