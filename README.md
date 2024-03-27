@@ -2,14 +2,15 @@
 
 ## Features and limitations
 
-**wayfarer** is a screen recorder for **GNOME**
+**wayfarer** is a screen recorder for **GNOME** (and other desktop environments)
 
 * Modern **GNOME desktop** (Arch, Fedora, Debian Testing, Ubuntu 22.04)
+* Since version 1.2.4.**wlroots** desktops are also supported
 * Wayland or Xorg
 * Pipewire / Pulseaudio / libportal (XDG Desktop Portal)
 * Wireplumber recommended
 
-In X11 mode, it may support other desktops (untested); in Wayland mode, other desktops are not supported (but may "work").
+In X11 mode, it may support other desktops (untested); in Wayland mode, since 1.2.4 `wlroots` desktops are supported;  other desktops are not supported (but may "work").
 
 Requires the following (development) packages:
 
@@ -123,7 +124,7 @@ For Gtk4, a small "Stop Recording" window is displayed instead.
 ## Miscellaneous
 
 Licence : GPL v3 or later
-(c) Jonathan Hudson 2021-2023
+(c) Jonathan Hudson 2021-2024
 
 Inspired by other fine tools such as **kooha**,  **peek** and **green-recorder**; I appreciate the other developer's pain with the ever moving targets of Gnome, Wayland, Pipewire and XDG Portal, particularly `kooha`'s guidance on the workings of GStreamer has been extremely useful.
 
