@@ -45,5 +45,10 @@
       <default>true</default>
       <summary>Show a hint message on area selection</summary>
     </key>
+
+    <key name="no-pop" type="b">
+      <default>false</default>
+      <summary>Don't popup timer/stop window</summary>
+    </key>
   </schema>
 </schemalist>

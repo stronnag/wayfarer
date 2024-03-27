@@ -141,6 +141,14 @@ public class Wayfarer : Gtk.Application {
 
         pw_session = (Environment.get_variable("XDG_SESSION_TYPE") == "wayland") ? PWSession.WAYLAND : PWSession.X11;
 
+		if (pw_session == PWSession.WAYLAND) {
+			var dmc = Environment.get_variable("XDG_CURRENT_DESKTOP");
+			if (dmc != null && dmc == "wlroots") {
+				two_is_one = true;
+				stderr.printf("*DBG* wlroots detected, setting `two_is_one` flag portal workaround\n");
+			}
+		}
+
         conf = new Conf();
 
         uint mediaset = Gtk.INVALID_LIST_POSITION;
@@ -422,13 +430,14 @@ public class Wayfarer : Gtk.Application {
         window.hide();
 
         if (!conf.notify_stop) {
-            runtimerlabel.label = "00:00";
-            stopwindow.present();
-            if(ctrlsets) {
-                stopwindow.hide();
-                stophide = false;
-            }
-
+			if (!conf.no_pop) {
+				runtimerlabel.label = "00:00";
+				stopwindow.present();
+				if(ctrlsets) {
+					stopwindow.hide();
+					stophide = false;
+				}
+			}
         }
 
         var delay = delayspin.get_value();
@@ -605,7 +614,7 @@ public class Wayfarer : Gtk.Application {
 		have_area = 0;
 		set_start_active(false);
 		update_status_label();
-		if(forced && sc.options.mediatype == "mp4") {
+		if(forced && sc.options.mediatype == "mp4" && conf.no_pop == false) {
 			stderr.printf("delete %s on forced close\n", filename);
 			statuslabel.label = "mp4 file deleted on forced close";
 			Posix.unlink(filename);
