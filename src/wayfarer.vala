@@ -46,12 +46,14 @@ public class Wayfarer : Gtk.Application {
     private bool ctrlsets;
     private bool stophide;
 	private bool forced;
+    public static bool two_is_one;
 
     public static bool show_version;
 
 	private AreaWindow sw;
 
     const OptionEntry[] options = {
+		{ "my-portal-is-broken", 0, 0, OptionArg.NONE, out two_is_one, "workaround broken portal", null},
         { "version", 'v', 0, OptionArg.NONE, out show_version, "show version", null},
         {null}
     };
@@ -136,6 +138,14 @@ public class Wayfarer : Gtk.Application {
         pw_result = PortalManager.Result.UNKNOWN;
 
         pw_session = (Environment.get_variable("XDG_SESSION_TYPE") == "wayland") ? PWSession.WAYLAND : PWSession.X11;
+
+		if (pw_session == PWSession.WAYLAND) {
+			var dmc = Environment.get_variable("XDG_CURRENT_DESKTOP");
+			if (dmc != null && dmc == "wlroots") {
+				two_is_one = true;
+				stderr.printf("*DBG* wlroots detected, setting `two_is_one` flag portal workaround\n");
+			}
+		}
 
         conf = new Conf();
 
@@ -367,7 +377,7 @@ public class Wayfarer : Gtk.Application {
                             if (ci.fd > -1  && ci.sources.length > 0 ) {
                                 fd = ci.fd;
                                 sources = ci.sources;
-                                if (sources[0].source_type == 1 || sources[0].source_type == 0) {
+                                if (sources[0].source_type == 1 || sources[0].source_type == 0 || (two_is_one && sources[0].source_type == 2)) {
                                     run_area_selection();
                                 } else {
                                     have_area = 2;
