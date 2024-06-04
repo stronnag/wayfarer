@@ -16,7 +16,8 @@ Requires the following (development) packages:
 
 * Gtk 4
 * Vala
-* Gstreamer 1.0
+* gstreamer 1.0
+* gstreamer-pbutils-1.0
 * libpulse-mainloop-glib (libpulse-dev on Debian et al.)
 * (optional, otherwise installed locally by the build system), Blueprint (Gtk Builder compiler).
 
