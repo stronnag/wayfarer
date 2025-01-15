@@ -44,6 +44,8 @@ namespace Utils {
             si.x = rect.x;
             si.y = rect.y;
             si.id = s;
+			si.scale = monitor.scale;
+			stderr.printf(":DBG: %d scale %f\n", j, si.scale);
             sis.add(si);
         }
     }

@@ -351,7 +351,8 @@ public class Wayfarer : Gtk.Application {
         prefs_hint.active = conf.show_hint;
 
         sources = new GenericArray<PortalManager.SourceInfo?>();
-
+		var fake_sources = new GenericArray<PortalManager.SourceInfo?>();
+		Utils.fake_sources(ref fake_sources);
         if(pw_session == PWSession.WAYLAND) {
             pw = new PortalManager(conf.restore_token);
             pw.closed.connect(() => {
@@ -366,7 +367,10 @@ public class Wayfarer : Gtk.Application {
                         if(result == PortalManager.Result.OK) {
                             var ci = pw.get_cast_info();
                             if (ci.fd > -1  && ci.sources.length > 0 ) {
-                                fd = ci.fd;
+								for(var js = 0; js < ci.sources.length; js++) {
+									ci.sources[js].scale = fake_sources[js].scale;
+								}
+								fd = ci.fd;
                                 sources = ci.sources;
                                 if (sources[0].source_type == 1 || sources[0].source_type == 0 || (two_is_one && sources[0].source_type == 2)) {
                                     run_area_selection();
@@ -382,7 +386,7 @@ public class Wayfarer : Gtk.Application {
                     }
                 });
         } else {
-            Utils.fake_sources(ref sources);
+			sources = fake_sources;
         }
 
         areabutton.clicked.connect(() => {
@@ -530,7 +534,8 @@ public class Wayfarer : Gtk.Application {
                                                            sc.options.selinfo.x1,
                                                            sc.options.selinfo.y1);
 //                    stderr.printf("dbg: %s\n", astr);
-                    if (x0 != -1 && x1 != -1) {
+
+					if (x0 != -1 && x1 != -1) {
                         have_area = 1;
                         update_status_label(astr);
                     } else {
