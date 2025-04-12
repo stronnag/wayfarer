@@ -1,4 +1,3 @@
-[Compact]
 public class Conf : Object {
     public string audio_device { get; set; }
     public string video_dir { get; set; }
