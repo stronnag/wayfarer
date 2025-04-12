@@ -1,7 +1,9 @@
 namespace Utils {
-    private const string CSSSTR="#record { background:  @theme_selected_bg_color;}";
-    // background-color: @accent_bg_color; }";
-    private const string UCSSSTR="#record { background:  @theme_normal_bg_color;}";
+    private const string CSSSTR="""
+#recsel { background:  @theme_selected_bg_color;}
+#recdef { background:  @theme_normal_bg_color;}
+#opaqueish {background: rgba(255, 255, 255, 0.1);}
+""";
 
 	public void get_even(ref int v, bool up = false) {
         if (up)
@@ -13,12 +15,10 @@ namespace Utils {
         return 1+get_num_processors()/2;
     }
 
-    public void setup_css(Gtk.Widget w, bool on = true) {
-		string str = (on) ? CSSSTR : UCSSSTR;
+    public void setup_css(Gtk.Widget w) {
         var provider = new Gtk.CssProvider ();
-		load_provider_string(ref provider, str);
-        var stylec = w.get_style_context();
-        stylec.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
+		load_provider_string(ref provider, CSSSTR);
+		Gtk.StyleContext.add_provider_for_display (Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
     }
 
 	public void load_provider_string(ref Gtk.CssProvider provider, string str) {
@@ -44,7 +44,26 @@ namespace Utils {
             si.x = rect.x;
             si.y = rect.y;
             si.id = s;
+			si.scale = monitor.scale;
+			stderr.printf(":DBG: %d scale %f\n", j, si.scale);
             sis.add(si);
         }
     }
+
+	public async string get_video_directory(string? d) {
+		var fd = new  Gtk.FileDialog ();
+		var fn = d;
+		if( fn == null) {
+			fn = GLib.Path.build_filename(GLib.Environment.get_home_dir(), "Videos");
+		}
+		var dir = File.new_for_path(fn);
+		fd.initial_folder = dir;
+		fd.initial_file = dir;
+		fd.title = "Video Folder";
+		try {
+			var fh = yield fd.select_folder(null, null);
+			fn = fh.get_path();
+		} catch {}
+		return fn;
+	}
 }

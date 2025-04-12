@@ -85,7 +85,7 @@ Gtk.ApplicationWindow window {
 	halign: fill;
 	hexpand: true;
       }
-      Gtk.ComboBoxText media_sel {
+      Gtk.DropDown media_sel {
       }
     }
     // Row 2
@@ -96,7 +96,7 @@ Gtk.ApplicationWindow window {
       Gtk.Label {
 	label: "Audio Source:";
       }
-      Gtk.ComboBoxText audiosource {
+      Gtk.DropDown audiosource {
 	halign: fill;
       }
     }
@@ -214,12 +214,8 @@ menu popmenu {
   }
 }
 
-Gtk.Dialog wayfarerprefs {
+Gtk.Window wayfarerprefs {
   title: "Preferences";
-  [action response=ok default]
-  Button prefsapply {
-    label: _("Apply");
-  }
 }
 
 Gtk.Box prefsstuff {
@@ -264,6 +260,9 @@ Gtk.Box prefsstuff {
       label: "Show area selection hint";
       halign: fill;
     }
+  }
+  Gtk.Button prefsapply {
+    label: _("Apply");
   }
 }
 

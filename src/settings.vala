@@ -12,6 +12,8 @@ public class Conf : Object {
 
     public bool show_hint { get; set; }
 
+	public bool no_pop { get; set; }
+
     private Settings s;
 
     public signal void changed(string str);
@@ -26,5 +28,6 @@ public class Conf : Object {
         s.bind("notify-start", this, "notify_start", SettingsBindFlags.DEFAULT);
         s.bind("notify-stop", this, "notify_stop", SettingsBindFlags.DEFAULT);
         s.bind("show-hint", this, "show-hint", SettingsBindFlags.DEFAULT);
+        s.bind("no-pop", this, "no-pop", SettingsBindFlags.DEFAULT);
     }
 }

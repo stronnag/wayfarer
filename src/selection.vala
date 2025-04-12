@@ -326,17 +326,9 @@ public class AreaWindow : Gtk.Window {
         }
 	}
 
-    private void set_bg() {
-        string css = "window {background: rgba(255, 255, 255, 0.1);}";
-        var provider = new CssProvider();
-		Utils.load_provider_string( ref provider, css);
-        var stylec = get_style_context();
-        stylec.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
-    }
-
 	public void run (Wayfarer.PWSession xdt, GenericArray<PortalManager.SourceInfo?> sis) {
 		set_cursor_from_name("none");
-        set_bg();
+		set_name ("opaqueish");
         if(xdt == Wayfarer.PWSession.X11) {
             fullscreen();
         } else {
@@ -349,7 +341,7 @@ public class AreaWindow : Gtk.Window {
             var nht = 0;
             show.connect(() => {
                     Timeout.add(10, () => {
-                        var ht  = get_allocated_height();
+                        var ht  = get_height();
                         if (ht == 0) {
                             nht++;
                             return true;

@@ -1,4 +1,4 @@
-project('wayfarer', 'vala', 'c', version : '1.2.4')
+project('wayfarer', 'vala', 'c', version : '1.3.3')
 
 # For now, as some replacements are not  well defined.
 
@@ -7,6 +7,10 @@ show_deprecated = get_option('deprecations')
 if show_deprecated  == false
   add_project_arguments('-Wno-deprecated-declarations', language : 'c')
   add_project_arguments('--enable-deprecated', language : 'vala')
+endif
+
+if meson.get_compiler('c').get_id() == 'clang'
+  add_global_arguments('-Wno-error=incompatible-function-pointer-types', language : 'c')
 endif
 
 conf_data = configuration_data()
@@ -44,7 +48,7 @@ executable(
     wresources,
     wguisrcs,
     dependencies: [
-      dependency('gtk4'),
+      dependency('gtk4', version: '>=4.12'),
       dependency('gio-2.0'),
       dependency('gstreamer-1.0'),
       dependency('gstreamer-pbutils-1.0'),
@@ -54,7 +58,7 @@ executable(
       meson.get_compiler('c').find_library('m'),
     ],
     vala_args : vopts,
-    c_args: vcargs,
+    c_args : vcargs,
     sources: wayvers_h,
     include_directories : configuration_inc,
     install: true,
@@ -63,7 +67,7 @@ executable(
 executable(
   'wayfarer-convert-to-schema',
   convsrc,
-  c_args: vcargs,
+  c_args : vcargs,
   dependencies: [
 	dependency('gio-2.0'),
         meson.get_compiler('vala').find_library('posix'),

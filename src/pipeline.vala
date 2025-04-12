@@ -91,17 +91,31 @@ class ScreenGrab : GLib.Object {
 
             var right = si[0].width - o.selinfo.x1;
             var bottom = si[0].height - o.selinfo.y1;
+			var left = o.selinfo.x0;
+			var top = o.selinfo.y0;
 
-            stderr.printf("crop: left %d, top %d, right %d bottom %d\n",
-                          o.selinfo.x0, o.selinfo.y0, right, bottom);
+            stderr.printf("crop: left %d, top %d, right %d bottom %d scale %f\n",
+                          left, top, right, bottom, si[0].scale);
 
-            videocrop.set("top", o.selinfo.y0);
-            videocrop.set("left", o.selinfo.x0);
+			var w =  si[0].width;
+			var h = si[0].height;
+
+			if(si[0].scale > 1.0) {
+				right = (int) (right*si[0].scale);
+				left = (int) (left*si[0].scale);
+				top= (int) (top*si[0].scale);
+				bottom = (int) (bottom*si[0].scale);
+				w = (int) (w*si[0].scale);
+				h = (int) (h*si[0].scale);
+			}
+
+            videocrop.set("top", top);
+            videocrop.set("left", left);
             videocrop.set("right", right);
             videocrop.set("bottom", bottom);
             var videoscale_filter = new Caps.simple("video/x-raw",
-                                                    "width", typeof(int), si[0].width,
-                                                    "height", typeof(int), si[0].height);
+                                                    "width", typeof(int), w,
+                                                    "height", typeof(int), h);
             stderr.printf("videoscale_filter %s\n",  videoscale_filter.to_string());
             bin.add_many(videoscale, videocrop);
             if (videoconvert.link(videoscale) == false) {
@@ -146,7 +160,7 @@ class ScreenGrab : GLib.Object {
                     link_ok = false;
                     return;
                 }
-                last_pos += s.width;
+                last_pos += (int) (s.width*s.scale);
             });
         if (link_ok) {
             var queue_pad = queue.get_static_pad("src");

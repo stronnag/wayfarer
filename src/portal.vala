@@ -41,6 +41,7 @@ public class PortalManager : Object {
         int height;
         int x;
         int y;
+		double scale;
         uint32 source_type;
         uint32 node_id;
         string id;
