@@ -47,11 +47,6 @@ public class PortalManager : Object {
         string id;
     }
 
-    public struct CastInfo {
-        int fd;
-        GenericArray<SourceInfo?> sources;
-    }
-
     private DBusProxy proxy;
     private DBusProxy session_proxy;
     private int tcount;
@@ -60,8 +55,10 @@ public class PortalManager : Object {
     private SourceInfo[] sources;
     private int fd;
     private bool capcursor;
+    private bool is_fullscreen;
+	private int response;
 
-    public signal void completed(Result p);
+    public signal void completed(Result p, int resp);
     public signal void closed();
 
     public PortalManager(string? rtoken) {
@@ -72,6 +69,7 @@ public class PortalManager : Object {
         }
         restore_token = rtoken;
         capcursor = true;
+        is_fullscreen = true;
         sources={};
         fd = -1;
     }
@@ -90,7 +88,7 @@ public class PortalManager : Object {
         return str;
     }
 
-    public CastInfo get_cast_info() {
+    public GenericArray<SourceInfo?> get_pw_sources() {
         GenericArray<SourceInfo?> sarry = new GenericArray<SourceInfo?>();
         foreach(var s in sources) {
             sarry.add(s);
@@ -98,7 +96,7 @@ public class PortalManager : Object {
         sarry.sort((a,b) => {
                 return strcmp(a.id, b.id);
             });
-        return CastInfo(){fd = fd, sources = sarry};
+        return sarry;
     }
 
     public void close() {
@@ -159,7 +157,7 @@ public class PortalManager : Object {
                 select_sources_request();
             }
         } else {
-            completed(Result.SESSIONFAIL);
+            completed(Result.SESSIONFAIL, response);
         }
     }
 
@@ -171,7 +169,7 @@ public class PortalManager : Object {
             start_request();
         } else {
             stderr.printf("Get sources cancelled\n");
-            completed(Result.SOURCESFAIL);
+            completed(Result.SOURCESFAIL, response);
         }
     }
 
@@ -199,15 +197,17 @@ public class PortalManager : Object {
                     sources += si;
                 }
             }
-            open_pw_remote_request();
+			completed(Result.OK, response);
         } else {
             stderr.printf("Start cancelled\n");
-            completed(Result.STARTFAIL);
+            completed(Result.STARTFAIL, response);
         }
     }
 
-    public void acquire(bool _capcursor) {
-        capcursor = _capcursor;
+    public void acquire(int _response, bool _capcursor, bool is_fs) {
+		capcursor = _capcursor;
+		is_fullscreen = is_fs;
+		response = _response;
         sources={};
         fd = -1;
         try {
@@ -220,7 +220,7 @@ public class PortalManager : Object {
             create_session_request();
         } catch (Error e) {
             stderr.printf("Start session proxy error %s\n", e.message);
-            completed(Result.PROXYFAIL);
+            completed(Result.PROXYFAIL, response);
         }
     }
 
@@ -240,7 +240,7 @@ public class PortalManager : Object {
         var vd = new VariantDict(null);
         vd.insert("handle_token", "s", (handle_token));
         vd.insert("types", "u", (uint32) XdpOutputType.MONITOR);
-        vd.insert("multiple", "b", true);
+        vd.insert("multiple", "b", is_fullscreen);
         vd.insert("cursor_mode", "u", (uint32)((capcursor) ? XdpCursorMode.EMBEDDED:XdpCursorMode.HIDDEN));
         vd.insert("persist_mode", "u", (uint32)XdpPersistMode.PERSISTENT);
         if(restore_token != null) {
@@ -263,7 +263,7 @@ public class PortalManager : Object {
         screencast_request(handle_token, "Start", v, on_start_cb);
     }
 
-    private void open_pw_remote_request() {
+    public int open_pw_remote_fd() {
         UnixFDList fdl;
         var options = new Variant("a{sv}");
         var v = new Variant.tuple({new Variant.object_path(session_handle), options});
@@ -279,8 +279,9 @@ public class PortalManager : Object {
             fd = fdl.get(fdindex);
         } catch (Error e) {
             stderr.printf("Remote fd failed %s\n", e.message);
+			return -1;
         }
-        completed(Result.OK);
+		return fd;
     }
 
     private void screencast_request(string handle_token, string name, Variant session_options,
@@ -301,7 +302,7 @@ public class PortalManager : Object {
                                                        "org.freedesktop.portal.Request");
         } catch (Error e) {
             stderr.printf("Request proxy error %s\n", e.message);
-            completed(Result.REQUESTFAIL);
+            completed(Result.REQUESTFAIL, response);
             return;
         }
 
@@ -319,7 +320,7 @@ public class PortalManager : Object {
                     proxy.call.end(res);
                 } catch (Error e) {
                     stderr.printf("Session failed [%s]\n", e.message);
-                    completed(Result.CASTFAIL);
+                    completed(Result.CASTFAIL, response);
                 }
             });
     }
@@ -338,12 +339,12 @@ public static int main(string?[] args) {
                 Posix.close(fd);
             }
             Idle.add(() => {
-                    a.acquire(true);
+                    a.acquire(1, true, true);
                     return false;
                 });
         });
 
-    a.completed.connect((result) => {
+    a.completed.connect((result, resp) => {
             if (result == PortalManager.Result.OK) {
                 var ci = a.get_cast_info();
                 fd  = ci.fd;

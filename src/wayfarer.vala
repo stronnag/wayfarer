@@ -38,7 +38,6 @@ public class Wayfarer : Gtk.Application {
     private SpinButton recordtimer;
 
     private PortalManager.Result pw_result;
-    private PWAction pw_action;
     private PWSession pw_session;
 	private int fd;
     GenericArray<PortalManager.SourceInfo?> sources;
@@ -267,7 +266,8 @@ public class Wayfarer : Gtk.Application {
                     if (Gdk.Display.get_default().get_monitors().get_n_items() > 1) {
                         conf.restore_token = ""; // may wish to select different monitor ...
                         pw.set_token(null);
-                        set_start_active(false);
+						sources.remove_range(0,sources.length);
+						pw.acquire(PWAction.SET_AREA, mouserecord.active, fullscreen.active);
                     }
                 }
             });
@@ -282,14 +282,12 @@ public class Wayfarer : Gtk.Application {
         startbutton.clicked.connect(() => {
 				forced = false;
 				stderr.printf("*DBG* Start with %s %d\n", pw_session.to_string(), fd);
-				if(pw_session == PWSession.X11 || fd > 0) {
-                    start_recording(validaudio);
-                } else {
-					stderr.printf("*DBG* Need acquire %d\n", fd);
-                    pw_action = START_RECORDING;
-                    pw.acquire(mouserecord.active);
-                }
-            });
+                if (pw_session == PWSession.WAYLAND) {
+					pw.acquire(PWAction.START_RECORDING, mouserecord.active, fullscreen.active);
+				} else {
+					start_recording(validaudio);
+				}
+			});
 
 		sc.report_gst_error.connect((s) => {
 				do_stop_action();
@@ -361,31 +359,37 @@ public class Wayfarer : Gtk.Application {
 					do_stop_action();
                 });
 
-            pw.completed.connect((result) => {
+            pw.completed.connect((result, act) => {
                     pw_result = result;
-                    if (pw_action == PWAction.SET_AREA) {
-                        if(result == PortalManager.Result.OK) {
-                            var ci = pw.get_cast_info();
-                            if (ci.fd > -1  && ci.sources.length > 0 ) {
-								for(var js = 0; js < ci.sources.length; js++) {
-									ci.sources[js].scale = fake_sources[js].scale;
+					print("DBG: Completed %d %s\n", result, ((PWAction)act).to_string());
+					if(result == PortalManager.Result.OK) {
+						var cisources = pw.get_pw_sources();
+						if (cisources.length > 0 ) {
+							for(var js = 0; js < cisources.length; js++) {
+								cisources[js].scale = fake_sources[js].scale;
+							}
+							sources = cisources;
+							if (sources[0].source_type == 1 || sources[0].source_type == 0 || (two_is_one && sources[0].source_type == 2)) {
+								have_area = 1;
+							} else {
+								have_area = 2;
+							}
+							if( act == PWAction.SET_AREA) {
+								if (have_area == 1) {
+									run_area_selection();
+								} else {
+									update_status_label();
+									set_start_active(validate_start());
 								}
-								fd = ci.fd;
-                                sources = ci.sources;
-                                if (sources[0].source_type == 1 || sources[0].source_type == 0 || (two_is_one && sources[0].source_type == 2)) {
-                                    run_area_selection();
-                                } else {
-                                    have_area = 2;
-                                    update_status_label();
-                                }
-                            }
-                            set_start_active(validate_start());
-                        }
-                    } else {
-                        start_recording(validaudio);
-                    }
-                });
-        } else {
+							} else {
+								fd = pw.open_pw_remote_fd();
+								print(":DBG: STARTREC fd=%d\n", fd);
+								start_recording(validaudio);
+							}
+						}
+					}
+				});
+		} else {
 			sources = fake_sources;
         }
 
@@ -394,8 +398,7 @@ public class Wayfarer : Gtk.Application {
                     run_area_selection();
                 } else {
                     sources.remove_range(0,sources.length);
-                    pw_action = PWAction.SET_AREA;
-                    pw.acquire(mouserecord.active);
+					pw.acquire(PWAction.SET_AREA, mouserecord.active, fullscreen.active);
                 }
             });
 
@@ -544,6 +547,7 @@ public class Wayfarer : Gtk.Application {
                     }
                     sw.destroy();
                     sw = null;
+					set_start_active(validate_start());
                     window.show();
 			});
 
@@ -558,9 +562,6 @@ public class Wayfarer : Gtk.Application {
 
     private bool validate_start() {
         bool valid = (fullscreen.active || have_area > 0);
-        if(pw_session == PWSession.WAYLAND) {
-            valid = valid && (fd > 0);
-        }
         return valid;
     }
 
@@ -616,9 +617,6 @@ public class Wayfarer : Gtk.Application {
 			Posix.close(fd);
 			fd = -1;
 		}
-		have_area = 0;
-		set_start_active(false);
-		update_status_label();
 		if(forced && sc.options.mediatype == "mp4" && conf.no_pop == false) {
 			stderr.printf("delete %s on forced close\n", filename);
 			statuslabel.label = "mp4 file deleted on forced close";
