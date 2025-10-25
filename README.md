@@ -1,4 +1,6 @@
-# Wayfarer - Screen Recorder for GNOME / Wayland / Pipewire
+# Migrated to [codeberg.org](https://codeberg.org/stronnag/wayfarer). This a read-only archive.
+
+## Wayfarer - Screen Recorder for GNOME / Wayland / Pipewire
 
 ## Features and limitations
 
